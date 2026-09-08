@@ -756,40 +756,40 @@ export default function CalendarPage() {
   }
 
   return (
-    <main className="h-screen overflow-hidden bg-gray-50 p-3">
+    <main className="h-screen overflow-hidden bg-gray-50 p-2 sm:p-3">
       <div className="mx-auto flex h-full max-w-[1800px] flex-col">
 
         {/* HEADER */}
 
-        <div className="mb-3 shrink-0 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div className="mb-2 shrink-0 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm sm:mb-3 sm:px-4 sm:py-3">
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:items-center lg:justify-between">
 
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
 
                 <Link
                   href={currentEmployee?.role === "admin" ? "/admin" : "/"}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                  className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 sm:px-3 sm:py-2 sm:text-sm"
                 >
                   {currentEmployee?.role === "admin"
                     ? tr("← Адмін", "← Administrace")
                     : tr("← Мої відпустки", "← Moje dovolené")}
                 </Link>
 
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-lg font-bold text-gray-900 sm:text-xl">
                   {tr("🗓️ Календар", "🗓️ Kalendář")}
                 </h1>
 
               </div>
 
-              <div className="mt-1 text-sm capitalize text-gray-500">
+              <div className="mt-0.5 text-xs capitalize text-gray-500 sm:mt-1 sm:text-sm">
                 {monthName}
               </div>
             </div>
 
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:gap-2">
 
               <LanguageSwitcher />
 
@@ -798,7 +798,7 @@ export default function CalendarPage() {
                 onClick={
                   goToPreviousMonth
                 }
-                className="rounded-lg border border-gray-300 bg-white px-3 py-2 font-semibold text-gray-700 hover:bg-gray-100"
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 sm:px-3"
               >
                 ←
               </button>
@@ -808,7 +808,7 @@ export default function CalendarPage() {
                 onClick={
                   goToJanuary2027
                 }
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 sm:px-4 sm:text-sm"
               >
                 {tr("Січень 2027", "Leden 2027")}
               </button>
@@ -818,7 +818,7 @@ export default function CalendarPage() {
                 onClick={
                   goToNextMonth
                 }
-                className="rounded-lg border border-gray-300 bg-white px-3 py-2 font-semibold text-gray-700 hover:bg-gray-100"
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 sm:px-3"
               >
                 →
               </button>
@@ -839,9 +839,9 @@ export default function CalendarPage() {
 
         {/* LEGEND */}
 
-        <div className="mb-3 shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-2 shadow-sm">
+        <div className="mb-2 shrink-0 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm sm:mb-3 sm:px-4">
 
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-700">
+          <div className="flex max-h-20 flex-wrap items-center gap-x-3 gap-y-1 overflow-y-auto text-[11px] text-gray-700 sm:max-h-none sm:gap-x-5 sm:gap-y-2 sm:text-xs">
 
             <span>
               <strong>R</strong> — {tr("рання", "ranní")}
@@ -908,16 +908,20 @@ export default function CalendarPage() {
 
         {/* CALENDAR */}
 
+        <div className="mb-1 px-1 text-[10px] text-gray-500 sm:hidden">
+          👆 {tr("Гортайте календар пальцем вліво/вправо та вгору/вниз", "Posouvejte kalendář prstem doleva/doprava a nahoru/dolů")}
+        </div>
+
         <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
 
-          <div className="h-full overflow-auto">
+          <div className="h-full overflow-auto overscroll-contain touch-pan-x touch-pan-y">
 
             <table className="border-collapse">
 
               <thead>
                 <tr>
 
-                  <th className="sticky left-0 top-0 z-30 min-w-[210px] border-b border-r border-gray-300 bg-white px-3 py-2 text-left text-sm font-bold text-gray-700">
+                  <th className="sticky left-0 top-0 z-30 min-w-[140px] border-b border-r border-gray-300 bg-white px-2 py-2 text-left text-xs font-bold text-gray-700 sm:min-w-[210px] sm:px-3 sm:text-sm">
                     {tr("Працівник", "Zaměstnanec")}
                   </th>
 
@@ -957,7 +961,7 @@ export default function CalendarPage() {
                             holiday?.name ??
                             ""
                           }
-                          className={`sticky top-0 z-20 min-w-[58px] border-b border-r border-gray-300 px-1 py-2 text-center ${
+                          className={`sticky top-0 z-20 min-w-[48px] border-b border-r border-gray-300 px-0.5 py-1.5 text-center sm:min-w-[58px] sm:px-1 sm:py-2 ${
                             holiday
                               ? "bg-red-100 text-red-800"
                               : isWeekend
@@ -966,11 +970,11 @@ export default function CalendarPage() {
                           }`}
                         >
 
-                          <div className="text-xs font-semibold">
+                          <div className="text-[10px] font-semibold sm:text-xs">
                             {weekday}
                           </div>
 
-                          <div className="text-sm font-bold">
+                          <div className="text-xs font-bold sm:text-sm">
                             {day}
                           </div>
 
@@ -1014,20 +1018,20 @@ export default function CalendarPage() {
                         key={
                           employee.id
                         }
-                        className="h-[54px]"
+                        className="h-[46px] sm:h-[54px]"
                       >
 
                         {/* EMPLOYEE NAME */}
 
                         <td
-                          className="sticky left-0 z-10 border-b border-r border-gray-300 px-3 py-2"
+                          className="sticky left-0 z-10 border-b border-r border-gray-300 px-2 py-1.5 sm:px-3 sm:py-2"
                           style={{
                             backgroundColor:
                               rowColor,
                           }}
                         >
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
 
                             {employee.team_leader && (
                               <span
@@ -1188,7 +1192,7 @@ export default function CalendarPage() {
                               >
 
                                 <div
-                                  className={`flex h-10 min-w-[50px] items-center justify-center rounded-md ${
+                                  className={`flex h-8 min-w-[42px] items-center justify-center rounded-md text-xs sm:h-10 sm:min-w-[50px] sm:text-sm ${
                                     conflict &&
                                     vacation
                                       ? "ring-2 ring-inset ring-red-500"
