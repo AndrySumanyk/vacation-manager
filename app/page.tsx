@@ -999,14 +999,6 @@ export default function Home() {
 
             <button
               type="button"
-              onClick={() => setRequestFilter("cancelled")}
-              className={`rounded-xl border px-4 py-2 text-sm font-semibold ${getFilterButtonClass("cancelled")}`}
-            >
-              ⚪ {tr("Скасовані мною", "Zrušené mnou")} ({getFilterCount("cancelled")})
-            </button>
-
-            <button
-              type="button"
               onClick={() => setRequestFilter("rejected")}
               className={`rounded-xl border px-4 py-2 text-sm font-semibold ${getFilterButtonClass("rejected")}`}
             >
