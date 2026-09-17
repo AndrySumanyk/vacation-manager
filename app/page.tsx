@@ -162,6 +162,11 @@ export default function Home() {
   const [cancellingRequestId, setCancellingRequestId] =
     useState<string | null>(null);
 
+  type RequestFilter = "approved" | "pending" | "cancelled" | "rejected";
+
+  const [requestFilter, setRequestFilter] =
+    useState<RequestFilter>("approved");
+
   const [checkingConflict, setCheckingConflict] =
     useState(false);
 
@@ -671,8 +676,8 @@ export default function Home() {
     const message =
       request.status === "approved"
         ? tr(
-            `Ви впевнені, що хочете повністю скасувати підтверджену відпустку ${request.start_date} — ${request.end_date}?\n\nПісля скасування вона буде видалена з календаря, а використані дні повернуться.`,
-            `Opravdu chcete úplně zrušit schválenou dovolenou ${request.start_date} — ${request.end_date}?\n\nPo zrušení bude odstraněna z kalendáře a využité dny se vrátí.`
+            `Ви впевнені, що хочете повністю скасувати підтверджену відпустку ${request.start_date} — ${request.end_date}?\n\nПісля скасування вона зникне з календаря, а використані дні повернуться.`,
+            `Opravdu chcete úplně zrušit schválenou dovolenou ${request.start_date} — ${request.end_date}?\n\nPo zrušení zmizí z kalendáře a využité dny se vrátí.`
           )
         : tr(
             `Ви впевнені, що хочете скасувати заявку на відпустку ${request.start_date} — ${request.end_date}?`,
@@ -689,7 +694,10 @@ export default function Home() {
 
     const { error } = await supabase
       .from("vacation_requests")
-      .delete()
+      .update({
+        status: "cancelled",
+        conflict_override: false,
+      })
       .eq("id", request.id)
       .eq("employee_id", employee.id)
       .in("status", ["pending", "approved"]);
@@ -734,10 +742,48 @@ export default function Home() {
     }
 
     if (status === "rejected") {
-      return tr("Відхилено", "Zamítnuto");
+      return tr("Не дозволено Team Leader", "Neschváleno Team Leaderem");
+    }
+
+    if (status === "cancelled") {
+      return tr("Скасовано мною", "Zrušeno mnou");
     }
 
     return status;
+  }
+
+  function getFilteredRequests() {
+    return requests.filter(
+      (request) => request.status === requestFilter
+    );
+  }
+
+  function getFilterButtonClass(filter: RequestFilter) {
+    const active = requestFilter === filter;
+
+    if (active) {
+      if (filter === "approved") {
+        return "bg-green-600 text-white border-green-600";
+      }
+
+      if (filter === "pending") {
+        return "bg-orange-500 text-white border-orange-500";
+      }
+
+      if (filter === "cancelled") {
+        return "bg-gray-600 text-white border-gray-600";
+      }
+
+      return "bg-red-600 text-white border-red-600";
+    }
+
+    return "bg-white text-gray-700 border-gray-300 hover:bg-gray-50";
+  }
+
+  function getFilterCount(filter: RequestFilter) {
+    return requests.filter(
+      (request) => request.status === filter
+    ).length;
   }
 
   function getStatusClass(status: string) {
@@ -751,6 +797,10 @@ export default function Home() {
 
     if (status === "rejected") {
       return "bg-red-100 text-red-700";
+    }
+
+    if (status === "cancelled") {
+      return "bg-gray-200 text-gray-700";
     }
 
     return "bg-gray-100 text-gray-700";
@@ -930,18 +980,54 @@ export default function Home() {
             {tr("Мої заявки", "Moje žádosti")}
           </h2>
 
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setRequestFilter("approved")}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold ${getFilterButtonClass("approved")}`}
+            >
+              🟢 {tr("Підтверджені", "Schválené")} ({getFilterCount("approved")})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRequestFilter("pending")}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold ${getFilterButtonClass("pending")}`}
+            >
+              🟠 {tr("Очікують підтвердження", "Čekající na schválení")} ({getFilterCount("pending")})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRequestFilter("cancelled")}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold ${getFilterButtonClass("cancelled")}`}
+            >
+              ⚪ {tr("Скасовані мною", "Zrušené mnou")} ({getFilterCount("cancelled")})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRequestFilter("rejected")}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold ${getFilterButtonClass("rejected")}`}
+            >
+              🔴 {tr("Не дозволені Team Leader", "Neschválené Team Leaderem")} ({getFilterCount("rejected")})
+            </button>
+          </div>
+
           {loadingRequests ? (
             <p className="mt-6 text-gray-500">
               {tr("Завантаження заявок...", "Načítání žádostí...")}
             </p>
-          ) : requests.length === 0 ? (
+          ) : getFilteredRequests().length === 0 ? (
             <p className="mt-6 text-gray-500">
-              {tr("У вас поки немає заявок на відпустку.", "Zatím nemáte žádné žádosti o dovolenou.")}
+              {requests.length === 0
+                ? tr("У вас поки немає заявок на відпустку.", "Zatím nemáte žádné žádosti o dovolenou.")
+                : tr("У цій категорії немає заявок.", "V této kategorii nejsou žádné žádosti.")}
             </p>
           ) : (
             <div className="mt-6 space-y-4">
 
-              {requests.map((request) => (
+              {getFilteredRequests().map((request) => (
                 <div
                   key={request.id}
                   className="flex flex-col gap-4 rounded-xl border border-gray-200 p-5 md:flex-row md:items-center md:justify-between"
