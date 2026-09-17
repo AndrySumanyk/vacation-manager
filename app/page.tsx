@@ -159,6 +159,9 @@ export default function Home() {
   const [saving, setSaving] =
     useState(false);
 
+  const [cancellingRequestId, setCancellingRequestId] =
+    useState<string | null>(null);
+
   const [checkingConflict, setCheckingConflict] =
     useState(false);
 
@@ -653,6 +656,74 @@ export default function Home() {
     await loadVacationRequests(employee.id);
   }
 
+  async function handleCancelVacation(request: VacationRequest) {
+    if (!employee) {
+      return;
+    }
+
+    if (
+      request.status !== "pending" &&
+      request.status !== "approved"
+    ) {
+      return;
+    }
+
+    const message =
+      request.status === "approved"
+        ? tr(
+            `Ви впевнені, що хочете повністю скасувати підтверджену відпустку ${request.start_date} — ${request.end_date}?\n\nПісля скасування вона буде видалена з календаря, а використані дні повернуться.`,
+            `Opravdu chcete úplně zrušit schválenou dovolenou ${request.start_date} — ${request.end_date}?\n\nPo zrušení bude odstraněna z kalendáře a využité dny se vrátí.`
+          )
+        : tr(
+            `Ви впевнені, що хочете скасувати заявку на відпустку ${request.start_date} — ${request.end_date}?`,
+            `Opravdu chcete zrušit žádost o dovolenou ${request.start_date} — ${request.end_date}?`
+          );
+
+    const confirmed = window.confirm(message);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setCancellingRequestId(request.id);
+
+    const { error } = await supabase
+      .from("vacation_requests")
+      .delete()
+      .eq("id", request.id)
+      .eq("employee_id", employee.id)
+      .in("status", ["pending", "approved"]);
+
+    setCancellingRequestId(null);
+
+    if (error) {
+      console.error("CANCEL VACATION ERROR:", error);
+
+      alert(
+        tr(
+          "Не вдалося скасувати відпустку.\n\n" + error.message,
+          "Nepodařilo se zrušit dovolenou.\n\n" + error.message
+        )
+      );
+
+      return;
+    }
+
+    alert(
+      request.status === "approved"
+        ? tr(
+            "Підтверджену відпустку повністю скасовано.",
+            "Schválená dovolená byla úplně zrušena."
+          )
+        : tr(
+            "Заявку на відпустку скасовано.",
+            "Žádost o dovolenou byla zrušena."
+          )
+    );
+
+    await loadVacationRequests(employee.id);
+  }
+
   function getStatusText(status: string) {
     if (status === "pending") {
       return tr("Очікує підтвердження", "Čeká na schválení");
@@ -902,15 +973,35 @@ export default function Home() {
                     )}
                   </div>
 
-                  <span
-                    className={`w-fit rounded-full px-4 py-2 text-sm font-medium ${getStatusClass(
-                      request.status
-                    )}`}
-                  >
-                    {getStatusText(
-                      request.status
+                  <div className="flex flex-col items-start gap-3 md:items-end">
+                    <span
+                      className={`w-fit rounded-full px-4 py-2 text-sm font-medium ${getStatusClass(
+                        request.status
+                      )}`}
+                    >
+                      {getStatusText(
+                        request.status
+                      )}
+                    </span>
+
+                    {(request.status === "pending" ||
+                      request.status === "approved") && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCancelVacation(request)
+                        }
+                        disabled={
+                          cancellingRequestId === request.id
+                        }
+                        className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {cancellingRequestId === request.id
+                          ? tr("Скасування...", "Rušení...")
+                          : tr("Скасувати відпустку", "Zrušit dovolenou")}
+                      </button>
                     )}
-                  </span>
+                  </div>
 
                 </div>
               ))}
