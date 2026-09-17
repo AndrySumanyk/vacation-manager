@@ -692,7 +692,7 @@ export default function Home() {
 
     setCancellingRequestId(request.id);
 
-    const { error } = await supabase
+    const { data: updatedRequest, error } = await supabase
       .from("vacation_requests")
       .update({
         status: "cancelled",
@@ -700,12 +700,14 @@ export default function Home() {
       })
       .eq("id", request.id)
       .eq("employee_id", employee.id)
-      .in("status", ["pending", "approved"]);
+      .in("status", ["pending", "approved"])
+      .select("id")
+      .single();
 
     setCancellingRequestId(null);
 
-    if (error) {
-      console.error("CANCEL VACATION ERROR:", error);
+    if (error || !updatedRequest) {
+      console.error("CANCEL VACATION ERROR:", error ?? "Заявку не знайдено або оновлення заборонене RLS");
 
       alert(
         tr(
