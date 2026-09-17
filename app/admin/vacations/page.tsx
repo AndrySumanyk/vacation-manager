@@ -28,7 +28,6 @@ type VacationRequest = {
   conflict_override: boolean;
   reviewed_by: string | null;
   reviewed_at: string | null;
-  decision_comment: string | null;
   created_at: string;
 };
 
@@ -273,7 +272,6 @@ export default function AdminVacationsPage() {
               conflict_override,
               reviewed_by,
               reviewed_at,
-              decision_comment,
               created_at
             `
           )
@@ -353,12 +351,16 @@ export default function AdminVacationsPage() {
       }
 
       if (actionLogsResult.error) {
-        throw actionLogsResult.error;
+        console.error(
+          "VACATION ACTION LOG LOAD ERROR:",
+          actionLogsResult.error
+        );
+        setActionLogs([]);
+      } else {
+        setActionLogs(
+          actionLogsResult.data ?? []
+        );
       }
-
-      setActionLogs(
-        (actionLogsResult.data ?? []) as VacationActionLog[]
-      );
 
       const scheduleChangesByEmployee =
         new Map<string, ScheduleChange[]>();
@@ -1526,14 +1528,7 @@ export default function AdminVacationsPage() {
                         {tr("Рішення прийняв:", "Rozhodnutí provedl:")} {log.performed_by_name}
                       </div>
 
-                      {request?.decision_comment && (
-                        <div className="mt-2 rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-700">
-                          <span className="font-semibold">
-                            💬 {tr("Коментар:", "Komentář:")}
-                          </span>{" "}
-                          {request.decision_comment}
-                        </div>
-                      )}
+
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
