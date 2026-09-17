@@ -1155,7 +1155,7 @@ export default function CalendarPage() {
                                   "#22c55e";
                               } else {
                                 background =
-                                  "#fef3c7";
+                                  "#fde047";
                               }
                             }
 
