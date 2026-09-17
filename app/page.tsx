@@ -692,17 +692,12 @@ export default function Home() {
 
     setCancellingRequestId(request.id);
 
-    const { data: updatedRequest, error } = await supabase
-      .from("vacation_requests")
-      .update({
-        status: "cancelled",
-        conflict_override: false,
-      })
-      .eq("id", request.id)
-      .eq("employee_id", employee.id)
-      .in("status", ["pending", "approved"])
-      .select("id")
-      .maybeSingle();
+    const { data: cancelled, error } = await supabase.rpc(
+      "cancel_vacation_request",
+      {
+        request_id: request.id,
+      }
+    );
 
     setCancellingRequestId(null);
 
@@ -719,16 +714,17 @@ export default function Home() {
       return;
     }
 
-    if (!updatedRequest) {
-      console.error("CANCEL VACATION: no row was updated", {
+    if (cancelled !== true) {
+      console.error("CANCEL VACATION: function did not cancel the request", {
         requestId: request.id,
         employeeId: employee.id,
+        result: cancelled,
       });
 
       alert(
         tr(
-          "Не вдалося скасувати відпустку. Заявка не була змінена. Перевірте RLS-політику в Supabase.",
-          "Nepodařilo se zrušit dovolenou. Žádost nebyla změněna. Zkontrolujte RLS oprávnění v Supabase."
+          "Не вдалося скасувати відпустку. Заявка не була змінена. Перевірте, що заявка ще має статус «Очікує підтвердження» або «Підтверджено».",
+          "Nepodařilo se zrušit dovolenou. Žádost nebyla změněna. Zkontrolujte, zda má žádost stále stav „Čeká na schválení“ nebo „Schváleno“."
         )
       );
 
