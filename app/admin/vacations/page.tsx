@@ -194,9 +194,6 @@ export default function AdminVacationsPage() {
       "pending"
     );
 
-  const [employeeSearch, setEmployeeSearch] =
-    useState("");
-
   const [processingId, setProcessingId] =
     useState<string | null>(null);
 
@@ -569,25 +566,20 @@ export default function AdminVacationsPage() {
 
   const filteredRequests =
     useMemo(() => {
-      const search = employeeSearch.trim().toLocaleLowerCase();
+      if (
+        filter === "all"
+      ) {
+        return requests;
+      }
 
-      return requests.filter((request) => {
-        if (filter !== "all" && request.status !== filter) {
-          return false;
-        }
-
-        if (!search) {
-          return true;
-        }
-
-        const employee = employeeMap.get(request.employee_id);
-        return employee?.full_name.toLocaleLowerCase().includes(search) ?? false;
-      });
+      return requests.filter(
+        (request) =>
+          request.status ===
+          filter
+      );
     }, [
       requests,
       filter,
-      employeeSearch,
-      employeeMap,
     ]);
 
   const pendingCount =
@@ -702,8 +694,8 @@ export default function AdminVacationsPage() {
     ) {
       setError(
         tr(
-          "Щоб відхилити заявку, напишіть причину в коментарі.",
-          "Chcete-li žádost zamítnout, napište důvod do komentáře."
+          "Щоб відхилити заявку, спочатку напишіть причину в коментарі.",
+          "Chcete-li žádost zamítnout, nejprve napište důvod do komentáře."
         )
       );
       return;
@@ -764,7 +756,7 @@ export default function AdminVacationsPage() {
               reviewed_at:
                 new Date().toISOString(),
               decision_comment:
-                commentDrafts[request.id]?.trim() || null,
+                decisionComment || null,
             }
           : {
               status:
@@ -776,7 +768,7 @@ export default function AdminVacationsPage() {
               reviewed_at:
                 new Date().toISOString(),
               decision_comment:
-                commentDrafts[request.id]?.trim() || null,
+                decisionComment || null,
             };
 
       const {
@@ -1037,41 +1029,6 @@ export default function AdminVacationsPage() {
               </p>
             </div>
           )}
-
-          {/* EMPLOYEE SEARCH */}
-
-          <div className="mt-6">
-            <label
-              htmlFor="employee-search"
-              className="mb-2 block text-sm font-semibold text-gray-700"
-            >
-              {tr("🔎 Пошук працівника", "🔎 Hledat zaměstnance")}
-            </label>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                id="employee-search"
-                type="search"
-                value={employeeSearch}
-                onChange={(event) => setEmployeeSearch(event.target.value)}
-                placeholder={tr(
-                  "Введіть ім'я працівника...",
-                  "Zadejte jméno zaměstnance..."
-                )}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-
-              {employeeSearch && (
-                <button
-                  type="button"
-                  onClick={() => setEmployeeSearch("")}
-                  className="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100"
-                >
-                  {tr("Очистити", "Vymazat")}
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* FILTERS */}
 
@@ -1420,14 +1377,11 @@ export default function AdminVacationsPage() {
 
                           <textarea
                             id={`decision-comment-${request.id}`}
-                            value={
-                              commentDrafts[request.id] ?? ""
-                            }
+                            value={commentDrafts[request.id] ?? ""}
                             onChange={(event) =>
                               setCommentDrafts((current) => ({
                                 ...current,
-                                [request.id]:
-                                  event.target.value,
+                                [request.id]: event.target.value,
                               }))
                             }
                             rows={3}
@@ -1436,7 +1390,7 @@ export default function AdminVacationsPage() {
                               "Напишіть коментар або причину рішення...",
                               "Napište komentář nebo důvod rozhodnutí..."
                             )}
-                            className="mt-3 w-full resize-y rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none ring-blue-500 placeholder:text-gray-400 focus:ring-2"
+                            className="mt-3 w-full resize-y rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500"
                           />
 
                           <div className="mt-1 text-right text-xs text-gray-500">
@@ -1572,6 +1526,15 @@ export default function AdminVacationsPage() {
                       <div className="mt-1 text-xs text-gray-500">
                         {tr("Рішення прийняв:", "Rozhodnutí provedl:")} {log.performed_by_name}
                       </div>
+
+                      {request?.decision_comment && (
+                        <div className="mt-2 rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-700">
+                          <span className="font-semibold">
+                            💬 {tr("Коментар:", "Komentář:")}
+                          </span>{" "}
+                          {request.decision_comment}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
