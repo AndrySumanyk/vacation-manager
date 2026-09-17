@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useLanguage } from "@/components/LanguageProvider";
 import { supabase } from "@/lib/supabase";
 
 type Shift = "early" | "day" | "night";
@@ -30,12 +28,8 @@ type Employee = {
 };
 
 export default function EmployeesPage() {
-  const { language } = useLanguage();
-
-  const tr = (uk: string, cs: string) =>
-    language === "uk" ? uk : cs;
-
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeeSearch, setEmployeeSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
@@ -145,7 +139,7 @@ export default function EmployeesPage() {
       !currentEmployee
     ) {
       setError(
-        tr("Не вдалося перевірити ваш профіль.", "Nepodařilo se ověřit váš profil.")
+        "Не вдалося перевірити ваш профіль."
       );
       setLoading(false);
       return;
@@ -153,7 +147,7 @@ export default function EmployeesPage() {
 
     if (currentEmployee.role !== "admin") {
       setError(
-        tr("Доступ дозволено тільки адміністраторам.", "Přístup je povolen pouze administrátorům.")
+        "Доступ дозволено тільки адміністраторам."
       );
       setLoading(false);
       return;
@@ -173,7 +167,7 @@ export default function EmployeesPage() {
       console.error(error);
 
       setError(
-        tr("Не вдалося завантажити працівників.", "Nepodařilo se načíst zaměstnance.")
+        "Не вдалося завантажити працівників."
       );
 
       setLoading(false);
@@ -256,7 +250,7 @@ export default function EmployeesPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error || tr("Не вдалося створити доступ.", "Nepodařilo se vytvořit přístup."));
+        setError(result.error || "Не вдалося створити доступ.");
         setAccessSaving(false);
         return;
       }
@@ -287,16 +281,13 @@ export default function EmployeesPage() {
       );
 
       setSuccess(
-        tr(
-          `Доступ для ${accessEmployee.full_name} створено. Логін: ${cleanLogin}`,
-          `Přístup pro ${accessEmployee.full_name} byl vytvořen. Login: ${cleanLogin}`
-        )
+        `Доступ для ${accessEmployee.full_name} створено. Логін: ${cleanLogin}`
       );
 
       closeAccessForm();
     } catch (error) {
       console.error(error);
-      setError(tr("Сталася помилка під час створення доступу.", "Při vytváření přístupu došlo k chybě."));
+      setError("Сталася помилка під час створення доступу.");
     } finally {
       setAccessSaving(false);
     }
@@ -399,7 +390,7 @@ export default function EmployeesPage() {
       if (!response.ok) {
         setError(
           result.error ||
-            tr("Не вдалося створити обліковий запис.", "Nepodařilo se vytvořit účet.")
+            "Не вдалося створити обліковий запис."
         );
 
         setSaving(false);
@@ -483,10 +474,7 @@ export default function EmployeesPage() {
       setShowForm(false);
 
       setSuccess(
-        tr(
-          `Працівника "${cleanName}" успішно додано. Логін: ${cleanLogin}`,
-          `Zaměstnanec „${cleanName}“ byl úspěšně přidán. Login: ${cleanLogin}`
-        )
+        `Працівника "${cleanName}" успішно додано. Логін: ${cleanLogin}`
       );
 
       await loadEmployees();
@@ -494,7 +482,7 @@ export default function EmployeesPage() {
       console.error(error);
 
       setError(
-        tr("Не вдалося зв'язатися із сервером.", "Nepodařilo se spojit se serverem.")
+        "Не вдалося зв'язатися із сервером."
       );
     }
 
@@ -563,7 +551,7 @@ export default function EmployeesPage() {
       console.error(error);
       setScheduleChanges([]);
       setError(
-        tr("Не вдалося завантажити зміни графіка: ", "Nepodařilo se načíst změny rozpisu: ") +
+        "Не вдалося завантажити зміни графіка: " +
           error.message
       );
       setScheduleChangesLoading(false);
@@ -627,7 +615,7 @@ export default function EmployeesPage() {
     if (error) {
       console.error(error);
       setError(
-        tr("Не вдалося додати зміну графіка: ", "Nepodařilo se přidat změnu rozpisu: ") +
+        "Не вдалося додати зміну графіка: " +
           error.message
       );
       setSaving(false);
@@ -639,7 +627,7 @@ export default function EmployeesPage() {
 
     setNewChangeDate("");
     setSuccess(
-      tr(`З ${displayDate} працівник працюватиме у зміні «${shiftName}».`, `Od ${displayDate} bude zaměstnanec pracovat ve směně „${shiftName}“.`)
+      `З ${displayDate} працівник працюватиме у зміні «${shiftName}».`
     );
 
     await loadScheduleChanges(editingEmployee.id);
@@ -648,7 +636,7 @@ export default function EmployeesPage() {
 
   async function deleteScheduleChange(change: ScheduleChange) {
     const confirmed = window.confirm(
-      tr(`Видалити зміну графіка з ${formatDateForDisplay(change.effective_date)}?`, `Smazat změnu rozpisu od ${formatDateForDisplay(change.effective_date)}?`)
+      `Видалити зміну графіка з ${formatDateForDisplay(change.effective_date)}?`
     );
 
     if (!confirmed) return;
@@ -665,14 +653,14 @@ export default function EmployeesPage() {
     if (error) {
       console.error(error);
       setError(
-        tr("Не вдалося видалити зміну графіка: ", "Nepodařilo se smazat změnu rozpisu: ") +
+        "Не вдалося видалити зміну графіка: " +
           error.message
       );
       setSaving(false);
       return;
     }
 
-    setSuccess(tr("Зміну графіка видалено.", "Změna rozpisu byla smazána."));
+    setSuccess("Зміну графіка видалено.");
 
     await loadScheduleChanges(change.employee_id);
     setSaving(false);
@@ -694,15 +682,15 @@ export default function EmployeesPage() {
     shift: string
   ) {
     if (shift === "early") {
-      return tr("Рання", "Ranní");
+      return "Рання";
     }
 
     if (shift === "day") {
-      return tr("Обідня", "Odpolední");
+      return "Обідня";
     }
 
     if (shift === "night") {
-      return tr("Нічна", "Noční");
+      return "Нічна";
     }
 
     return shift;
@@ -731,7 +719,7 @@ export default function EmployeesPage() {
       !editCycleStartDate
     ) {
       setError(
-        tr("Оберіть початок циклу.", "Vyberte začátek cyklu.")
+        "Оберіть початок циклу."
       );
       return;
     }
@@ -815,7 +803,7 @@ export default function EmployeesPage() {
     setNewChangeDate("");
 
     setSuccess(
-      tr("Дані працівника оновлено.", "Údaje zaměstnance byly aktualizovány.")
+      "Дані працівника оновлено."
     );
 
     await loadEmployees();
@@ -831,12 +819,12 @@ export default function EmployeesPage() {
 
     const action =
       newActiveStatus
-        ? tr("активувати", "aktivovat")
-        : tr("деактивувати", "deaktivovat");
+        ? "активувати"
+        : "деактивувати";
 
     const confirmed =
       window.confirm(
-        tr(`Ви впевнені, що хочете ${action} працівника "${employee.full_name}"?`, `Opravdu chcete ${action} zaměstnance „${employee.full_name}“?`)
+        `Ви впевнені, що хочете ${action} працівника "${employee.full_name}"?`
       );
 
     if (!confirmed) {
@@ -872,8 +860,8 @@ export default function EmployeesPage() {
 
     setSuccess(
       newActiveStatus
-        ? tr(`Працівника "${employee.full_name}" активовано.`, `Zaměstnanec „${employee.full_name}“ byl aktivován.`)
-        : tr(`Працівника "${employee.full_name}" деактивовано.`, `Zaměstnanec „${employee.full_name}“ byl deaktivován.`)
+        ? `Працівника "${employee.full_name}" активовано.`
+        : `Працівника "${employee.full_name}" деактивовано.`
     );
 
     await loadEmployees();
@@ -887,12 +875,12 @@ export default function EmployeesPage() {
 
     const actionText =
       newValue
-        ? tr("призначити Team Leader", "jmenovat Team Leadera")
-        : tr("зняти статус Team Leader", "odebrat status Team Leader");
+        ? "призначити Team Leader"
+        : "зняти статус Team Leader";
 
     const confirmed =
       window.confirm(
-        tr(`Ви впевнені, що хочете ${actionText} для "${employee.full_name}"?`, `Opravdu chcete ${actionText} pro „${employee.full_name}“?`)
+        `Ви впевнені, що хочете ${actionText} для "${employee.full_name}"?`
       );
 
     if (!confirmed) {
@@ -928,14 +916,18 @@ export default function EmployeesPage() {
 
     setSuccess(
       newValue
-        ? tr(`"${employee.full_name}" призначено Team Leader.`, `„${employee.full_name}“ byl jmenován Team Leaderem.`)
-        : tr(`Статус Team Leader для "${employee.full_name}" знято.`, `Status Team Leader pro „${employee.full_name}“ byl odebrán.`)
+        ? `"${employee.full_name}" призначено Team Leader.`
+        : `Статус Team Leader для "${employee.full_name}" знято.`
     );
 
     await loadEmployees();
   }
 
   
+
+  const filteredEmployees = employees.filter((employee) =>
+    employee.full_name.toLocaleLowerCase().includes(employeeSearch.trim().toLocaleLowerCase())
+  );
 
   const activeEmployees =
     employees.filter(
@@ -956,7 +948,7 @@ export default function EmployeesPage() {
         <div className="mx-auto max-w-6xl">
           <div className="rounded-2xl bg-white p-8 shadow-sm">
             <p className="text-gray-500">
-              {tr('Завантаження працівників...', 'Načítání zaměstnanců...')}
+              Завантаження працівників...
             </p>
           </div>
         </div>
@@ -976,18 +968,18 @@ export default function EmployeesPage() {
 
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {tr('Працівники', 'Zaměstnanci')}
+                Працівники
               </h1>
 
               <p className="mt-2 text-gray-600">
-                {tr("Усього працівників:", "Celkem zaměstnanců:")}{" "}
+                Усього працівників:{" "}
                 <strong>
                   {employees.length}
                 </strong>
               </p>
 
               <p className="mt-1 text-sm text-gray-500">
-                {tr("Активних:", "Aktivních:")}{" "}
+                Активних:{" "}
                 <strong>
                   {activeEmployees.length}
                 </strong>
@@ -1000,12 +992,11 @@ export default function EmployeesPage() {
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <LanguageSwitcher />
               <Link
                 href="/admin"
                 className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-semibold text-gray-700 hover:bg-gray-100"
               >
-                {tr('← Адмін панель', '← Administrace')}
+                ← Адмін панель
               </Link>
 
               <button
@@ -1025,8 +1016,8 @@ export default function EmployeesPage() {
               className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
             >
                 {showForm
-                  ? tr("Закрити форму", "Zavřít formulář")
-                  : tr("+ Додати працівника", "+ Přidat zaměstnance")}
+                  ? "Закрити форму"
+                  : "+ Додати працівника"}
               </button>
             </div>
           </div>
@@ -1043,7 +1034,7 @@ export default function EmployeesPage() {
               className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-6"
             >
               <h2 className="text-xl font-bold text-gray-900">
-                {tr('Новий працівник', 'Nový zaměstnanec')}
+                Новий працівник
               </h2>
 
               <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -1052,7 +1043,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {tr("Ім'я та прізвище", 'Jméno a příjmení')}
+                    Ім'я та прізвище
                   </label>
 
                   <input
@@ -1063,7 +1054,7 @@ export default function EmployeesPage() {
                         event.target.value
                       )
                     }
-                    placeholder={tr("Наприклад: Ivan Petrenko", "Například: Ivan Petrenko")}
+                    placeholder="Наприклад: Ivan Petrenko"
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                     required
                   />
@@ -1073,7 +1064,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {tr('Логін', 'Login')}
+                    Логін
                   </label>
 
                   <input
@@ -1084,7 +1075,7 @@ export default function EmployeesPage() {
                         event.target.value
                       )
                     }
-                    placeholder={tr("Наприклад: ivan.petrenko", "Například: ivan.petrenko")}
+                    placeholder="Наприклад: ivan.petrenko"
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                     required
                   />
@@ -1100,7 +1091,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {tr('Пароль', 'Heslo')}
+                    Пароль
                   </label>
 
                   <input
@@ -1111,7 +1102,7 @@ export default function EmployeesPage() {
                         event.target.value
                       )
                     }
-                    placeholder={tr("Мінімум 6 символів", "Minimálně 6 znaků")}
+                    placeholder="Мінімум 6 символів"
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                     required
                   />
@@ -1121,7 +1112,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {tr('Кількість змін', 'Počet směn')}
+                    Кількість змін
                   </label>
 
                   <select
@@ -1149,11 +1140,11 @@ export default function EmployeesPage() {
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                   >
                     <option value="2">
-                      {tr('2 зміни', '2 směny')}
+                      2 зміни
                     </option>
 
                     <option value="3">
-                      {tr('3 зміни', '3 směny')}
+                      3 зміни
                     </option>
                   </select>
                 </div>
@@ -1162,7 +1153,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {tr('Початкова зміна', 'Počáteční směna')}
+                    Початкова зміна
                   </label>
 
                   <select
@@ -1181,11 +1172,11 @@ export default function EmployeesPage() {
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                   >
                     <option value="early">
-                      {tr('Рання', 'Ranní')}
+                      Рання
                     </option>
 
                     <option value="day">
-                      {tr('Обідня', 'Odpolední')}
+                      Обідня
                     </option>
 
                     <option
@@ -1195,7 +1186,7 @@ export default function EmployeesPage() {
                         "2"
                       }
                     >
-                      {tr('Нічна', 'Noční')}
+                      Нічна
                     </option>
                   </select>
                 </div>
@@ -1204,7 +1195,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {tr('Початок циклу', 'Začátek cyklu')}
+                    Початок циклу
                   </label>
 
                   <input
@@ -1233,7 +1224,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {tr('Днів відпустки на рік', 'Dnů dovolené za rok')}
+                    Днів відпустки на рік
                   </label>
 
                   <input
@@ -1321,7 +1312,7 @@ export default function EmployeesPage() {
 
             <div className="rounded-xl bg-blue-50 p-5">
               <p className="text-sm text-blue-600">
-                {tr('Усього', 'Celkem')}
+                Усього
               </p>
 
               <p className="mt-1 text-3xl font-bold text-blue-800">
@@ -1331,7 +1322,7 @@ export default function EmployeesPage() {
 
             <div className="rounded-xl bg-green-50 p-5">
               <p className="text-sm text-green-600">
-                {tr('Активні', 'Aktivní')}
+                Активні
               </p>
 
               <p className="mt-1 text-3xl font-bold text-green-800">
@@ -1351,11 +1342,37 @@ export default function EmployeesPage() {
 
           </div>
 
+          {/* Пошук працівника */}
+
+          <div className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">🔎 Пошук працівника</label>
+                <p className="mt-1 text-xs text-gray-500">Введіть ім'я або частину імені працівника.</p>
+              </div>
+              <div className="flex w-full gap-2 md:max-w-xl">
+                <input
+                  type="text"
+                  value={employeeSearch}
+                  onChange={(event) => setEmployeeSearch(event.target.value)}
+                  placeholder="Наприклад: Symaniuk Andrii"
+                  className="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                {employeeSearch && (
+                  <button type="button" onClick={() => setEmployeeSearch("")} className="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100">
+                    Очистити
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-gray-500">Показано: <strong>{filteredEmployees.length}</strong> з <strong>{employees.length}</strong> працівників</div>
+          </div>
+
           {/* Список працівників */}
 
           <div className="mt-8 space-y-4">
 
-            {employees.map(
+            {filteredEmployees.map(
               (employee) => (
                 <div
                   key={
@@ -1373,17 +1390,17 @@ export default function EmployeesPage() {
                   {accessEmployee?.id === employee.id && (
                     <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-5">
                       <h3 className="text-lg font-bold text-gray-900">
-                        {tr('🔐 Додати доступ до системи', '🔐 Přidat přístup do systému')}
+                        🔐 Додати доступ до системи
                       </h3>
 
                       <p className="mt-1 text-sm text-gray-600">
-                        {tr('Створіть логін і пароль для цього працівника.', 'Vytvořte pro tohoto zaměstnance login a heslo.')}
+                        Створіть логін і пароль для цього працівника.
                       </p>
 
                       <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            {tr('Логін', 'Login')}
+                            Логін
                           </label>
                           <input
                             type="text"
@@ -1398,7 +1415,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            {tr('Пароль', 'Heslo')}
+                            Пароль
                           </label>
                           <input
                             type="password"
@@ -1407,7 +1424,7 @@ export default function EmployeesPage() {
                               setAccessPassword(event.target.value)
                             }
                             className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
-                            placeholder={tr("Мінімум 6 символів", "Minimálně 6 znaků")}
+                            placeholder="Мінімум 6 символів"
                             autoComplete="new-password"
                           />
                         </div>
@@ -1420,7 +1437,7 @@ export default function EmployeesPage() {
                           disabled={accessSaving}
                           className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                         >
-                          {accessSaving ? tr("Створення...", "Vytváření...") : tr("Створити доступ", "Vytvořit přístup")}
+                          {accessSaving ? "Створення..." : "Створити доступ"}
                         </button>
 
                         <button
@@ -1429,7 +1446,7 @@ export default function EmployeesPage() {
                           disabled={accessSaving}
                           className="rounded-xl border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                         >
-                          {tr('Скасувати', 'Zrušit')}
+                          Скасувати
                         </button>
                       </div>
                     </div>
@@ -1448,7 +1465,7 @@ export default function EmployeesPage() {
                       className="rounded-xl bg-gray-50 p-5"
                     >
                       <h2 className="text-xl font-bold text-gray-900">
-                        {tr('Редагування працівника', 'Úprava zaměstnance')}
+                        Редагування працівника
                       </h2>
 
                       <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -1457,7 +1474,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            {tr("Ім'я та прізвище", 'Jméno a příjmení')}
+                            Ім'я та прізвище
                           </label>
 
                           <input
@@ -1483,7 +1500,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            {tr('Кількість змін', 'Počet směn')}
+                            Кількість змін
                           </label>
 
                           <select
@@ -1514,11 +1531,11 @@ export default function EmployeesPage() {
                             className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                           >
                             <option value="2">
-                              {tr('2 зміни', '2 směny')}
+                              2 зміни
                             </option>
 
                             <option value="3">
-                              {tr('3 зміни', '3 směny')}
+                              3 зміни
                             </option>
                           </select>
                         </div>
@@ -1527,17 +1544,17 @@ export default function EmployeesPage() {
 
                         <div className="md:col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-5">
                           <h3 className="text-lg font-bold text-gray-900">
-                            {tr('🔄 Зміни графіка', '🔄 Změny rozpisu')}
+                            🔄 Зміни графіка
                           </h3>
 
                           <p className="mt-1 text-sm text-gray-600">
-                            {tr('Вкажіть, з якої дати працівник переходить на іншу зміну.', 'Zadejte datum, od kterého zaměstnanec přechází na jinou směnu.')}
+                            Вкажіть, з якої дати працівник переходить на іншу зміну.
                           </p>
 
                           <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
                             <div>
                               <label className="block text-sm font-medium text-gray-700">
-                                {tr('З дати', 'Od data')}
+                                З дати
                               </label>
                               <input
                                 type="date"
@@ -1552,7 +1569,7 @@ export default function EmployeesPage() {
 
                             <div>
                               <label className="block text-sm font-medium text-gray-700">
-                                {tr('Нова зміна', 'Nová směna')}
+                                Нова зміна
                               </label>
                               <select
                                 value={newChangeShift}
@@ -1561,13 +1578,13 @@ export default function EmployeesPage() {
                                 }
                                 className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                               >
-                                <option value="early">{tr('R — Рання', 'R — Ranní')}</option>
-                                <option value="day">{tr('O — Обідня', 'O — Odpolední')}</option>
+                                <option value="early">R — Рання</option>
+                                <option value="day">O — Обідня</option>
                                 <option
                                   value="night"
                                   disabled={editScheduleType === "2"}
                                 >
-                                  {tr('N — Нічна', 'N — Noční')}
+                                  N — Нічна
                                 </option>
                               </select>
                             </div>
@@ -1578,22 +1595,22 @@ export default function EmployeesPage() {
                               disabled={saving}
                               className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                             >
-                              {tr('+ Додати', '+ Přidat')}
+                              + Додати
                             </button>
                           </div>
 
                           <div className="mt-5">
                             <p className="text-sm font-semibold text-gray-800">
-                              {tr('Історія / заплановані зміни', 'Historie / plánované změny')}
+                              Історія / заплановані зміни
                             </p>
 
                             {scheduleChangesLoading ? (
                               <p className="mt-2 text-sm text-gray-500">
-                                {tr('Завантаження...', 'Načítání...')}
+                                Завантаження...
                               </p>
                             ) : scheduleChanges.length === 0 ? (
                               <p className="mt-2 rounded-lg bg-white p-3 text-sm text-gray-500">
-                                {tr('Змін немає. Працівник працює за основним графіком.', 'Žádné změny. Zaměstnanec pracuje podle základního rozpisu.')}
+                                Змін немає. Працівник працює за основним графіком.
                               </p>
                             ) : (
                               <div className="mt-2 space-y-2">
@@ -1604,7 +1621,7 @@ export default function EmployeesPage() {
                                   >
                                     <div className="text-sm">
                                       <strong>
-                                        {tr(`З ${formatDateForDisplay(change.effective_date)}`, `Od ${formatDateForDisplay(change.effective_date)}`)}
+                                        З {formatDateForDisplay(change.effective_date)}
                                       </strong>
                                       <span className="ml-2 text-gray-600">
                                         {change.initial_shift === "early"
@@ -1621,7 +1638,7 @@ export default function EmployeesPage() {
                                       disabled={saving}
                                       className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                                     >
-                                      {tr('🗑 Видалити', '🗑 Smazat')}
+                                      🗑 Видалити
                                     </button>
                                   </div>
                                 ))}
@@ -1634,7 +1651,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            {tr('Початок циклу', 'Začátek cyklu')}
+                            Початок циклу
                           </label>
 
                           <input
@@ -1660,7 +1677,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            {tr('Днів відпустки на рік', 'Dnů dovolené za rok')}
+                            Днів відпустки на рік
                           </label>
 
                           <input
@@ -1728,7 +1745,7 @@ export default function EmployeesPage() {
                           }
                           className="rounded-xl border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 hover:bg-gray-100"
                         >
-                          {tr('Скасувати', 'Zrušit')}
+                          Скасувати
                         </button>
 
                         <button
@@ -1739,8 +1756,8 @@ export default function EmployeesPage() {
                           className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                         >
                           {saving
-                            ? tr("Збереження...", "Ukládání...")
-                            : tr("Зберегти зміни", "Uložit změny")}
+                            ? "Збереження..."
+                            : "Зберегти зміни"}
                         </button>
 
                       </div>
@@ -1766,18 +1783,18 @@ export default function EmployeesPage() {
 
                             {employee.active ? (
                               <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                                {tr('Активний', 'Aktivní')}
+                                Активний
                               </span>
                             ) : (
                               <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-600">
-                                {tr('Неактивний', 'Neaktivní')}
+                                Неактивний
                               </span>
                             )}
 
                             {employee.role ===
                               "admin" && (
                               <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                                {tr('Адміністратор', 'Administrátor')}
+                                Адміністратор
                               </span>
                             )}
 
@@ -1793,37 +1810,37 @@ export default function EmployeesPage() {
                             {
                               employee.schedule_type
                             }{" "}
-                            {tr("зміни ·", "směny ·")}{" "}
-                            {tr("Початкова зміна:", "Počáteční směna:")}{" "}
+                            зміни ·{" "}
+                            Початкова зміна:{" "}
                             {getShiftName(
                               employee.initial_shift
                             )}
                           </p>
 
                           <p className="mt-1 text-sm text-gray-500">
-                            {tr("Початок циклу:", "Začátek cyklu:")}{" "}
+                            Початок циклу:{" "}
                             {
                               employee.cycle_start_date
                             }
                           </p>
 
                           <p className="mt-1 text-sm text-gray-500">
-                            {tr("Відпустка:", "Dovolená:")}{" "}
+                            Відпустка:{" "}
                             {
                               employee.vacation_days_per_year
                             }{" "}
-                            {tr("днів на рік", "dnů ročně")}
+                            днів на рік
                           </p>
 
                           <p className="mt-1 text-sm text-gray-500">
-                            {tr("Доступ до системи:", "Přístup do systému:")}{" "}
+                            Доступ до системи:{" "}
                             {employee.auth_user_id ? (
                               <span className="font-semibold text-green-600">
-                                {tr('Є', 'Ano')}
+                                Є
                               </span>
                             ) : (
                               <span className="font-semibold text-red-600">
-                                {tr('Немає', 'Ne')}
+                                Немає
                               </span>
                             )}
                           </p>
@@ -1840,7 +1857,7 @@ export default function EmployeesPage() {
                               onClick={() => openAccessForm(employee)}
                               className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
                             >
-                              {tr('🔐 Додати доступ', '🔐 Přidat přístup')}
+                              🔐 Додати доступ
                             </button>
                           )}
 
@@ -1853,7 +1870,7 @@ export default function EmployeesPage() {
                             }
                             className="rounded-xl border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-700 hover:bg-gray-100"
                           >
-                            {tr('Редагувати', 'Upravit')}
+                            Редагувати
                           </button>
 
                           <button
@@ -1870,7 +1887,7 @@ export default function EmployeesPage() {
                             }`}
                           >
                             {employee.team_leader
-                              ? tr("Зняти Team Leader", "Odebrat Team Leadera")
+                              ? "Зняти Team Leader"
                               : "👑 Team Leader"}
                           </button>
 
@@ -1888,8 +1905,8 @@ export default function EmployeesPage() {
                             }`}
                           >
                             {employee.active
-                              ? tr("Деактивувати", "Deaktivovat")
-                              : tr("Активувати", "Aktivovat")}
+                              ? "Деактивувати"
+                              : "Активувати"}
                           </button>
 
                         </div>

@@ -25,6 +25,9 @@ type VacationRequest = {
   end_date: string;
   status: string;
   conflict_override: boolean;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  decision_comment: string | null;
   created_at: string;
 };
 
@@ -134,6 +137,9 @@ export default function Home() {
 
   const [requests, setRequests] =
     useState<VacationRequest[]>([]);
+
+  const [reviewerNames, setReviewerNames] =
+    useState<Record<string, string>>({});
 
   const [holidays, setHolidays] =
     useState<Holiday[]>([]);
@@ -288,7 +294,7 @@ export default function Home() {
     const { data, error } = await supabase
       .from("vacation_requests")
       .select(
-        "id, employee_id, start_date, end_date, status, conflict_override, created_at"
+        "id, employee_id, start_date, end_date, status, conflict_override, reviewed_by, reviewed_at, decision_comment, created_at"
       )
       .eq("employee_id", employeeId)
       .order("start_date", {
@@ -301,7 +307,46 @@ export default function Home() {
       return;
     }
 
-    setRequests(data ?? []);
+    const loadedRequests = (data ?? []) as VacationRequest[];
+    setRequests(loadedRequests);
+
+    const reviewerIds = [
+      ...new Set(
+        loadedRequests
+          .map((request) => request.reviewed_by)
+          .filter((id): id is string => Boolean(id))
+      ),
+    ];
+
+    if (reviewerIds.length === 0) {
+      setReviewerNames({});
+      setLoadingRequests(false);
+      return;
+    }
+
+    const {
+      data: reviewerData,
+      error: reviewerError,
+    } = await supabase
+      .from("employees")
+      .select("auth_user_id, full_name")
+      .in("auth_user_id", reviewerIds);
+
+    if (reviewerError) {
+      console.error("GET REVIEWER NAMES ERROR:", reviewerError);
+      setReviewerNames({});
+    } else {
+      const names: Record<string, string> = {};
+
+      for (const reviewer of reviewerData ?? []) {
+        if (reviewer.auth_user_id) {
+          names[reviewer.auth_user_id] = reviewer.full_name;
+        }
+      }
+
+      setReviewerNames(names);
+    }
+
     setLoadingRequests(false);
   }
 
@@ -746,6 +791,30 @@ export default function Home() {
     await loadVacationRequests(employee.id);
   }
 
+  function formatDecisionDateTime(dateString: string) {
+    return new Date(dateString).toLocaleString(
+      language === "cs" ? "cs-CZ" : "uk-UA",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  }
+
+  function getDecisionPerson(request: VacationRequest) {
+    if (!request.reviewed_by) {
+      return tr("Невідомо", "Neznámý");
+    }
+
+    return (
+      reviewerNames[request.reviewed_by] ??
+      tr("Невідомо", "Neznámý")
+    );
+  }
+
   function getStatusText(status: string) {
     if (status === "pending") {
       return tr("Очікує підтвердження", "Čeká na schválení");
@@ -1065,16 +1134,104 @@ export default function Home() {
                     )}
                   </div>
 
-                  <div className="flex flex-col items-start gap-3 md:items-end">
-                    <span
-                      className={`w-fit rounded-full px-4 py-2 text-sm font-medium ${getStatusClass(
-                        request.status
-                      )}`}
-                    >
-                      {getStatusText(
-                        request.status
-                      )}
-                    </span>
+                  <div className="flex min-w-[260px] flex-col items-start gap-3 md:items-end">
+                    <div className="flex flex-col items-start gap-1 md:items-end">
+                      <span
+                        className={`w-fit rounded-full px-4 py-2 text-sm font-medium ${getStatusClass(
+                          request.status
+                        )}`}
+                      >
+                        {getStatusText(
+                          request.status
+                        )}
+                      </span>
+
+                      {request.status === "approved" &&
+                        request.reviewed_at && (
+                          <div className="text-left text-sm text-gray-600 md:text-right">
+                            <p>
+                              <span className="font-semibold">
+                                {tr("Підтверджено ким:", "Schválil:")}
+                              </span>{" "}
+                              {getDecisionPerson(request)}
+                            </p>
+                            <p className="mt-1">
+                              <span className="font-semibold">
+                                {tr("Дата рішення:", "Datum rozhodnutí:")}
+                              </span>{" "}
+                              {formatDecisionDateTime(request.reviewed_at)}
+                            </p>
+
+                            {request.decision_comment && (
+                              <div className="mt-2 rounded-xl border border-green-200 bg-green-50 p-3 text-left md:text-right">
+                                <p className="font-semibold text-green-800">
+                                  💬 {tr("Коментар:", "Komentář:")}
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap text-green-700">
+                                  {request.decision_comment}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                      {request.status === "rejected" &&
+                        request.reviewed_at && (
+                          <div className="text-left text-sm text-gray-600 md:text-right">
+                            <p>
+                              <span className="font-semibold">
+                                {tr("Не дозволено ким:", "Neschválil:")}
+                              </span>{" "}
+                              {getDecisionPerson(request)}
+                            </p>
+                            <p className="mt-1">
+                              <span className="font-semibold">
+                                {tr("Дата рішення:", "Datum rozhodnutí:")}
+                              </span>{" "}
+                              {formatDecisionDateTime(request.reviewed_at)}
+                            </p>
+
+                            {request.decision_comment && (
+                              <div className="mt-2 rounded-xl border border-red-200 bg-red-50 p-3 text-left md:text-right">
+                                <p className="font-semibold text-red-800">
+                                  💬 {tr("Причина:", "Důvod:")}
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap text-red-700">
+                                  {request.decision_comment}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                      {request.status === "cancelled" &&
+                        request.reviewed_at && (
+                          <div className="text-left text-sm text-gray-600 md:text-right">
+                            <p>
+                              <span className="font-semibold">
+                                {tr("Скасовано ким:", "Zrušil:")}
+                              </span>{" "}
+                              {getDecisionPerson(request)}
+                            </p>
+                            <p className="mt-1">
+                              <span className="font-semibold">
+                                {tr("Дата скасування:", "Datum zrušení:")}
+                              </span>{" "}
+                              {formatDecisionDateTime(request.reviewed_at)}
+                            </p>
+                          </div>
+                        )}
+
+                      {request.status === "cancelled" &&
+                        !request.reviewed_at && (
+                          <p className="text-sm text-gray-500">
+                            {tr(
+                              "Скасовано вами",
+                              "Zrušeno vámi"
+                            )}
+                          </p>
+                        )}
+                    </div>
 
                     {(request.status === "pending" ||
                       request.status === "approved") && (
@@ -1330,13 +1487,16 @@ export default function Home() {
               {!checkingConflict &&
                 conflictChecked &&
                 conflicts.length > 0 && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                  <div className="rounded-2xl border-2 border-red-400 bg-red-50 p-5 shadow-sm">
 
-                    <p className="font-semibold text-red-700">
-                      ⚠️ {tr("Увага: можливий конфлікт", "Pozor: možný konflikt")}
-                    </p>
+                    <div className="flex items-center gap-2 rounded-xl bg-red-100 px-4 py-3">
+                      <span className="text-xl">⚠️</span>
+                      <p className="font-extrabold text-red-800">
+                        {tr("УВАГА: Є КОНФЛІКТ", "POZOR: EXISTUJE KONFLIKT")}
+                      </p>
+                    </div>
 
-                    <p className="mt-2 text-sm text-red-600">
+                    <p className="mt-3 text-sm font-medium text-red-700">
                       {tr("На вибрані дати вже запланована", "Na vybrané termíny je již naplánována")}
                       {tr("відпустka іншого працівника:", "dovolená jiného zaměstnance:")}
                     </p>
@@ -1370,7 +1530,7 @@ export default function Home() {
 
                     </div>
 
-                    <p className="mt-3 text-sm font-medium text-red-700">
+                    <p className="mt-4 rounded-xl border border-red-300 bg-white px-4 py-3 text-sm font-bold text-red-700">
                       {tr("Заявку все одно можна подати.", "Žádost lze přesto odeslat.")}
                       {" "}
                       {tr("Адміністратор вирішить, чи підтверджувати її.", "Administrátor rozhodne, zda ji schválí.")}

@@ -28,6 +28,17 @@ type VacationRequest = {
   conflict_override: boolean;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  decision_comment: string | null;
+  created_at: string;
+};
+
+type VacationActionLog = {
+  id: string;
+  request_id: string;
+  employee_id: string;
+  action: "approved" | "rejected";
+  performed_by: string;
+  performed_by_name: string;
   created_at: string;
 };
 
@@ -160,6 +171,9 @@ export default function AdminVacationsPage() {
   const [requests, setRequests] =
     useState<VacationRequest[]>([]);
 
+  const [actionLogs, setActionLogs] =
+    useState<VacationActionLog[]>([]);
+
   const [holidays, setHolidays] =
     useState<Holiday[]>([]);
 
@@ -180,8 +194,14 @@ export default function AdminVacationsPage() {
       "pending"
     );
 
+  const [employeeSearch, setEmployeeSearch] =
+    useState("");
+
   const [processingId, setProcessingId] =
     useState<string | null>(null);
+
+  const [commentDrafts, setCommentDrafts] =
+    useState<Record<string, string>>({});
 
   useEffect(() => {
     loadData();
@@ -223,6 +243,7 @@ export default function AdminVacationsPage() {
         holidaysResult,
         scheduleChangesResult,
         daysOffResult,
+        actionLogsResult,
       ] = await Promise.all([
         supabase
           .from("employees")
@@ -255,6 +276,7 @@ export default function AdminVacationsPage() {
               conflict_override,
               reviewed_by,
               reviewed_at,
+              decision_comment,
               created_at
             `
           )
@@ -293,6 +315,14 @@ export default function AdminVacationsPage() {
             "day_off_date",
             { ascending: true }
           ),
+
+        supabase
+          .from("vacation_action_logs")
+          .select(
+            "id, request_id, employee_id, action, performed_by, performed_by_name, created_at"
+          )
+          .order("created_at", { ascending: false })
+          .limit(30),
       ]);
 
       if (
@@ -324,6 +354,14 @@ export default function AdminVacationsPage() {
       ) {
         throw daysOffResult.error;
       }
+
+      if (actionLogsResult.error) {
+        throw actionLogsResult.error;
+      }
+
+      setActionLogs(
+        (actionLogsResult.data ?? []) as VacationActionLog[]
+      );
 
       const scheduleChangesByEmployee =
         new Map<string, ScheduleChange[]>();
@@ -531,20 +569,25 @@ export default function AdminVacationsPage() {
 
   const filteredRequests =
     useMemo(() => {
-      if (
-        filter === "all"
-      ) {
-        return requests;
-      }
+      const search = employeeSearch.trim().toLocaleLowerCase();
 
-      return requests.filter(
-        (request) =>
-          request.status ===
-          filter
-      );
+      return requests.filter((request) => {
+        if (filter !== "all" && request.status !== filter) {
+          return false;
+        }
+
+        if (!search) {
+          return true;
+        }
+
+        const employee = employeeMap.get(request.employee_id);
+        return employee?.full_name.toLocaleLowerCase().includes(search) ?? false;
+      });
     }, [
       requests,
       filter,
+      employeeSearch,
+      employeeMap,
     ]);
 
   const pendingCount =
@@ -650,6 +693,22 @@ export default function AdminVacationsPage() {
       }
     }
 
+    const decisionComment =
+      commentDrafts[request.id]?.trim() ?? "";
+
+    if (
+      newStatus === "rejected" &&
+      !decisionComment
+    ) {
+      setError(
+        tr(
+          "Щоб відхилити заявку, напишіть причину в коментарі.",
+          "Chcete-li žádost zamítnout, napište důvod do komentáře."
+        )
+      );
+      return;
+    }
+
     const confirmedAction =
       window.confirm(
         newStatus ===
@@ -704,6 +763,8 @@ export default function AdminVacationsPage() {
                 user.id,
               reviewed_at:
                 new Date().toISOString(),
+              decision_comment:
+                commentDrafts[request.id]?.trim() || null,
             }
           : {
               status:
@@ -714,6 +775,8 @@ export default function AdminVacationsPage() {
                 user.id,
               reviewed_at:
                 new Date().toISOString(),
+              decision_comment:
+                commentDrafts[request.id]?.trim() || null,
             };
 
       const {
@@ -732,6 +795,20 @@ export default function AdminVacationsPage() {
 
       if (updateError) {
         throw updateError;
+      }
+
+      const { error: logError } = await supabase
+        .from("vacation_action_logs")
+        .insert({
+          request_id: request.id,
+          employee_id: request.employee_id,
+          action: newStatus,
+          performed_by: user.id,
+          performed_by_name: currentEmployee?.full_name ?? "Адміністратор",
+        });
+
+      if (logError) {
+        console.error("VACATION ACTION LOG ERROR:", logError);
       }
 
       /*
@@ -960,6 +1037,41 @@ export default function AdminVacationsPage() {
               </p>
             </div>
           )}
+
+          {/* EMPLOYEE SEARCH */}
+
+          <div className="mt-6">
+            <label
+              htmlFor="employee-search"
+              className="mb-2 block text-sm font-semibold text-gray-700"
+            >
+              {tr("🔎 Пошук працівника", "🔎 Hledat zaměstnance")}
+            </label>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                id="employee-search"
+                type="search"
+                value={employeeSearch}
+                onChange={(event) => setEmployeeSearch(event.target.value)}
+                placeholder={tr(
+                  "Введіть ім'я працівника...",
+                  "Zadejte jméno zaměstnance..."
+                )}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+
+              {employeeSearch && (
+                <button
+                  type="button"
+                  onClick={() => setEmployeeSearch("")}
+                  className="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  {tr("Очистити", "Vymazat")}
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* FILTERS */}
 
@@ -1285,9 +1397,57 @@ export default function AdminVacationsPage() {
                           )}
                       </div>
 
+                      {/* TEAM LEADER COMMENT */}
+
+                      {request.status === "pending" && (
+                        <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                          <label
+                            htmlFor={`decision-comment-${request.id}`}
+                            className="block text-sm font-bold text-blue-900"
+                          >
+                            {tr(
+                              "💬 Коментар Team Leader",
+                              "💬 Komentář Team Leader"
+                            )}
+                          </label>
+
+                          <p className="mt-1 text-xs text-blue-700">
+                            {tr(
+                              "Для відхилення заявки причина обов'язкова. Для підтвердження коментар необов'язковий.",
+                              "Při zamítnutí je důvod povinný. Při schválení je komentář nepovinný."
+                            )}
+                          </p>
+
+                          <textarea
+                            id={`decision-comment-${request.id}`}
+                            value={
+                              commentDrafts[request.id] ?? ""
+                            }
+                            onChange={(event) =>
+                              setCommentDrafts((current) => ({
+                                ...current,
+                                [request.id]:
+                                  event.target.value,
+                              }))
+                            }
+                            rows={3}
+                            maxLength={1000}
+                            placeholder={tr(
+                              "Напишіть коментар або причину рішення...",
+                              "Napište komentář nebo důvod rozhodnutí..."
+                            )}
+                            className="mt-3 w-full resize-y rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none ring-blue-500 placeholder:text-gray-400 focus:ring-2"
+                          />
+
+                          <div className="mt-1 text-right text-xs text-gray-500">
+                            {(commentDrafts[request.id] ?? "").length}/1000
+                          </div>
+                        </div>
+                      )}
+
                       {/* ACTIONS */}
 
-                      <div className="flex shrink-0 flex-col gap-2 lg:w-48">
+                      <div className="mt-4 flex shrink-0 flex-col gap-2 lg:w-48">
                         {request.status ===
                           "pending" && (
                           <>
@@ -1362,6 +1522,76 @@ export default function AdminVacationsPage() {
                 );
               }
             )
+          )}
+        </div>
+
+        {/* ACTION LOG */}
+
+        <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                {tr("📋 Журнал дій", "📋 Protokol akcí")}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {tr(
+                  "Хто і коли підтвердив або відхилив відпустку.",
+                  "Kdo a kdy schválil nebo zamítl dovolenou."
+                )}
+              </p>
+            </div>
+            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+              {actionLogs.length}
+            </span>
+          </div>
+
+          {actionLogs.length === 0 ? (
+            <div className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+              {tr("Дій ще немає.", "Zatím nejsou žádné akce.")}
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {actionLogs.map((log) => {
+                const employee = employeeMap.get(log.employee_id);
+                const request = requests.find((item) => item.id === log.request_id);
+
+                return (
+                  <div
+                    key={log.id}
+                    className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <div className="font-semibold text-gray-900">
+                        {employee?.full_name ?? tr("Невідомий працівник", "Neznámý zaměstnanec")}
+                      </div>
+                      {request && (
+                        <div className="mt-1 text-sm text-gray-600">
+                          {formatDate(request.start_date)} — {formatDate(request.end_date)}
+                        </div>
+                      )}
+                      <div className="mt-1 text-xs text-gray-500">
+                        {tr("Рішення прийняв:", "Rozhodnutí provedl:")} {log.performed_by_name}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        log.action === "approved"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}>
+                        {log.action === "approved"
+                          ? tr("✓ Підтверджено", "✓ Schváleno")
+                          : tr("✕ Відхилено", "✕ Zamítnuto")}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {formatDateTime(log.created_at, language)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
