@@ -702,17 +702,33 @@ export default function Home() {
       .eq("employee_id", employee.id)
       .in("status", ["pending", "approved"])
       .select("id")
-      .single();
+      .maybeSingle();
 
     setCancellingRequestId(null);
 
-    if (error || !updatedRequest) {
-      console.error("CANCEL VACATION ERROR:", error ?? "Заявку не знайдено або оновлення заборонене RLS");
+    if (error) {
+      console.error("CANCEL VACATION ERROR:", error);
 
       alert(
         tr(
           "Не вдалося скасувати відпустку.\n\n" + error.message,
           "Nepodařilo se zrušit dovolenou.\n\n" + error.message
+        )
+      );
+
+      return;
+    }
+
+    if (!updatedRequest) {
+      console.error("CANCEL VACATION: no row was updated", {
+        requestId: request.id,
+        employeeId: employee.id,
+      });
+
+      alert(
+        tr(
+          "Не вдалося скасувати відпустку. Заявка не була змінена. Перевірте RLS-політику в Supabase.",
+          "Nepodařilo se zrušit dovolenou. Žádost nebyla změněna. Zkontrolujte RLS oprávnění v Supabase."
         )
       );
 
