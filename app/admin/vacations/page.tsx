@@ -694,8 +694,8 @@ export default function AdminVacationsPage() {
     ) {
       setError(
         tr(
-          "Щоб відхилити заявку, спочатку напишіть причину в коментарі.",
-          "Chcete-li žádost zamítnout, nejprve napište důvod do komentáře."
+          "Щоб відхилити заявку, напишіть причину в коментарі.",
+          "Chcete-li žádost zamítnout, napište důvod do komentáře."
         )
       );
       return;
@@ -743,52 +743,43 @@ export default function AdminVacationsPage() {
         );
       }
 
-      const updateData =
-        newStatus ===
-        "rejected"
-          ? {
-              status:
-                "rejected",
-              conflict_override:
-                false,
-              reviewed_by:
-                user.id,
-              reviewed_at:
-                new Date().toISOString(),
-              decision_comment:
-                decisionComment || null,
-            }
-          : {
-              status:
-                "approved",
-              conflict_override:
-                hasConflict,
-              reviewed_by:
-                user.id,
-              reviewed_at:
-                new Date().toISOString(),
-              decision_comment:
-                decisionComment || null,
-            };
+      const decisionComment =
+        commentDrafts[request.id]?.trim() ?? "";
+
+      if (
+        newStatus === "rejected" &&
+        !decisionComment
+      ) {
+        throw new Error(
+          tr(
+            "Щоб відхилити заявку, напишіть причину в коментарі.",
+            "Chcete-li žádost zamítnout, napište důvod do komentáře."
+          )
+        );
+      }
 
       const {
         error: updateError,
-      } = await supabase
-        .from(
-          "vacation_requests"
-        )
-        .update(
-          updateData
-        )
-        .eq(
-          "id",
-          request.id
-        );
+      } = await supabase.rpc(
+        "review_vacation_request",
+        {
+          p_request_id: request.id,
+          p_new_status: newStatus,
+          p_conflict_override:
+            newStatus === "approved"
+              ? hasConflict
+              : false,
+          p_decision_comment:
+            decisionComment || null,
+        }
+      );
 
       if (updateError) {
         throw updateError;
       }
 
+      // Журнал дій не повинен ламати саме підтвердження,
+      // тому помилку журналу лише показуємо в консолі.
       const { error: logError } = await supabase
         .from("vacation_action_logs")
         .insert({
@@ -796,11 +787,16 @@ export default function AdminVacationsPage() {
           employee_id: request.employee_id,
           action: newStatus,
           performed_by: user.id,
-          performed_by_name: currentEmployee?.full_name ?? "Адміністратор",
+          performed_by_name:
+            currentEmployee?.full_name ??
+            tr("Team Leader", "Team Leader"),
         });
 
       if (logError) {
-        console.error("VACATION ACTION LOG ERROR:", logError);
+        console.error(
+          "VACATION ACTION LOG ERROR:",
+          logError
+        );
       }
 
       /*
@@ -867,8 +863,8 @@ export default function AdminVacationsPage() {
 
           <p className="mt-3 text-gray-600">
             {tr(
-              "Ця сторінка доступна тільки адміністраторам.",
-              "Tato stránka je dostupná pouze administrátorům."
+              "Ця сторінка доступна тільки адміністраторам або Team Leader.",
+              "Tato stránka je dostupná pouze administrátorům nebo Team Leaderům."
             )}
           </p>
 
@@ -1357,7 +1353,7 @@ export default function AdminVacationsPage() {
                       {/* TEAM LEADER COMMENT */}
 
                       {request.status === "pending" && (
-                        <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
                           <label
                             htmlFor={`decision-comment-${request.id}`}
                             className="block text-sm font-bold text-blue-900"
@@ -1377,11 +1373,14 @@ export default function AdminVacationsPage() {
 
                           <textarea
                             id={`decision-comment-${request.id}`}
-                            value={commentDrafts[request.id] ?? ""}
+                            value={
+                              commentDrafts[request.id] ?? ""
+                            }
                             onChange={(event) =>
                               setCommentDrafts((current) => ({
                                 ...current,
-                                [request.id]: event.target.value,
+                                [request.id]:
+                                  event.target.value,
                               }))
                             }
                             rows={3}
@@ -1401,7 +1400,7 @@ export default function AdminVacationsPage() {
 
                       {/* ACTIONS */}
 
-                      <div className="mt-4 flex shrink-0 flex-col gap-2 lg:w-48">
+                      <div className="flex shrink-0 flex-col gap-2 lg:w-48">
                         {request.status ===
                           "pending" && (
                           <>
