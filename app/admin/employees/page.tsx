@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { supabase } from "@/lib/supabase";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type Shift = "early" | "day" | "night";
 
@@ -29,6 +30,8 @@ type Employee = {
 };
 
 export default function EmployeesPage() {
+  const { language } = useLanguage();
+  const tx = (uk: string, cs: string) => language === "cs" ? cs : uk;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -166,9 +169,7 @@ export default function EmployeesPage() {
     if (error) {
       console.error(error);
 
-      setError(
-        "Не вдалося завантажити працівників."
-      );
+      setError(tx("Не вдалося завантажити працівників.", "Nepodařilo se načíst zaměstnance."));
 
       setLoading(false);
       return;
@@ -678,21 +679,10 @@ export default function EmployeesPage() {
     return `${day}.${month}.${year}`;
   }
 
-  function getShiftName(
-    shift: string
-  ) {
-    if (shift === "early") {
-      return "Рання";
-    }
-
-    if (shift === "day") {
-      return "Обідня";
-    }
-
-    if (shift === "night") {
-      return "Нічна";
-    }
-
+  function getShiftName(shift: string) {
+    if (shift === "early") return tx("Ранкова", "Ranní");
+    if (shift === "day") return tx("Денна", "Odpolední");
+    if (shift === "night") return tx("Нічна", "Noční");
     return shift;
   }
 
@@ -944,7 +934,7 @@ export default function EmployeesPage() {
         <div className="mx-auto max-w-6xl">
           <div className="rounded-2xl bg-white p-8 shadow-sm">
             <p className="text-gray-500">
-              Завантаження працівників...
+              {tx("Завантаження працівників...", "Načítání zaměstnanců...")}
             </p>
           </div>
         </div>
@@ -964,23 +954,23 @@ export default function EmployeesPage() {
 
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Працівники
+                {tx("Працівники", "Zaměstnanci")}
               </h1>
 
               <p className="mt-2 text-gray-600">
-                Усього працівників:{" "}
+                {tx("Усього працівників:", "Celkem zaměstnanců:")} {" "}
                 <strong>
                   {employees.length}
                 </strong>
               </p>
 
               <p className="mt-1 text-sm text-gray-500">
-                Активних:{" "}
+                {tx("Активних:", "Aktivních:")} {" "}
                 <strong>
                   {activeEmployees.length}
                 </strong>
                 {" · "}
-                Team Leader:{" "}
+                {tx("Team Leader:", "Team Leader:")} {" "}
                 <strong>
                   {teamLeaders.length}
                 </strong>
@@ -994,7 +984,7 @@ export default function EmployeesPage() {
                 href="/admin"
                 className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-semibold text-gray-700 hover:bg-gray-100"
               >
-                ← Адмін панель
+                {tx("← Адмін панель", "← Administrace")}
               </Link>
 
               <button
@@ -1014,8 +1004,8 @@ export default function EmployeesPage() {
               className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
             >
                 {showForm
-                  ? "Закрити форму"
-                  : "+ Додати працівника"}
+                  ? tx("Закрити форму", "Zavřít formulář")
+                  : tx("+ Додати працівника", "+ Přidat zaměstnance")}
               </button>
             </div>
           </div>
@@ -1032,7 +1022,7 @@ export default function EmployeesPage() {
               className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-6"
             >
               <h2 className="text-xl font-bold text-gray-900">
-                Новий працівник
+                {tx("Новий працівник", "Nový zaměstnanec")}
               </h2>
 
               <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -1041,7 +1031,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Ім'я та прізвище
+                    {tx("Ім'я та прізвище", "Jméno a příjmení")}
                   </label>
 
                   <input
@@ -1052,7 +1042,7 @@ export default function EmployeesPage() {
                         event.target.value
                       )
                     }
-                    placeholder="Наприклад: Ivan Petrenko"
+                    placeholder={tx("Наприклад: Ivan Petrenko", "Například: Ivan Petrenko")}
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                     required
                   />
@@ -1062,7 +1052,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Логін
+                    {tx("Логін", "Login")}
                   </label>
 
                   <input
@@ -1073,15 +1063,13 @@ export default function EmployeesPage() {
                         event.target.value
                       )
                     }
-                    placeholder="Наприклад: ivan.petrenko"
+                    placeholder={tx("Наприклад: ivan.petrenko", "Například: ivan.petrenko")}
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                     required
                   />
 
                   <p className="mt-1 text-xs text-gray-500">
-                    Цей логін працівник
-                    використовуватиме
-                    для входу.
+                    {tx("Цей логін працівник використовуватиме для входу.", "Tento login bude zaměstnanec používat pro přihlášení.")}
                   </p>
                 </div>
 
@@ -1089,7 +1077,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Пароль
+                    {tx("Пароль", "Heslo")}
                   </label>
 
                   <input
@@ -1100,7 +1088,7 @@ export default function EmployeesPage() {
                         event.target.value
                       )
                     }
-                    placeholder="Мінімум 6 символів"
+                    placeholder={tx("Мінімум 6 символів", "Minimálně 6 znaků")}
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                     required
                   />
@@ -1110,7 +1098,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Кількість змін
+                    {tx("Кількість змін", "Počet směn")}
                   </label>
 
                   <select
@@ -1138,11 +1126,11 @@ export default function EmployeesPage() {
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                   >
                     <option value="2">
-                      2 зміни
+                      {tx("2 зміни", "2 směny")}
                     </option>
 
                     <option value="3">
-                      3 зміни
+                      {tx("3 зміни", "3 směny")}
                     </option>
                   </select>
                 </div>
@@ -1151,7 +1139,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Початкова зміна
+                    {tx("Початкова зміна", "Počáteční směna")}
                   </label>
 
                   <select
@@ -1170,11 +1158,11 @@ export default function EmployeesPage() {
                     className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                   >
                     <option value="early">
-                      Рання
+                      {tx("Рання", "Ranní")}
                     </option>
 
                     <option value="day">
-                      Обідня
+                      {tx("Обідня", "Odpolední")}
                     </option>
 
                     <option
@@ -1184,7 +1172,7 @@ export default function EmployeesPage() {
                         "2"
                       }
                     >
-                      Нічна
+                      {tx("Нічна", "Noční")}
                     </option>
                   </select>
                 </div>
@@ -1193,7 +1181,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Початок циклу
+                    {tx("Початок циклу", "Začátek cyklu")}
                   </label>
 
                   <input
@@ -1212,9 +1200,7 @@ export default function EmployeesPage() {
                   />
 
                   <p className="mt-1 text-xs text-gray-500">
-                    Для ранньої та обідньої
-                    зміни зазвичай понеділок.
-                    Для нічної — неділя.
+                    {tx("Для ранкової та денної зміни зазвичай понеділок. Для нічної — неділя.", "Pro ranní a odpolední směnu je obvykle pondělí. Pro noční směnu neděle.")}
                   </p>
                 </div>
 
@@ -1222,7 +1208,7 @@ export default function EmployeesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Днів відпустки на рік
+                    {tx("Днів відпустки на рік", "Dnů dovolené za rok")}
                   </label>
 
                   <input
@@ -1269,8 +1255,7 @@ export default function EmployeesPage() {
                 </label>
 
                 <p className="mt-2 text-sm text-emerald-700">
-                  Відмітьте, якщо працівник
-                  є Team Leader.
+                  {tx("Відмітьте, якщо працівник є Team Leader.", "Zaškrtněte, pokud je zaměstnanec Team Leader.")}
                 </p>
               </div>
 
@@ -1283,8 +1268,8 @@ export default function EmployeesPage() {
                   className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                 >
                   {saving
-                    ? "Створення..."
-                    : "Створити працівника"}
+                    ? tx("Створення...", "Vytváření...")
+                    : tx("Створити працівника", "Vytvořit zaměstnance")}
                 </button>
               </div>
             </form>
@@ -1310,7 +1295,7 @@ export default function EmployeesPage() {
 
             <div className="rounded-xl bg-blue-50 p-5">
               <p className="text-sm text-blue-600">
-                Усього
+                {tx("Усього", "Celkem")}
               </p>
 
               <p className="mt-1 text-3xl font-bold text-blue-800">
@@ -1320,7 +1305,7 @@ export default function EmployeesPage() {
 
             <div className="rounded-xl bg-green-50 p-5">
               <p className="text-sm text-green-600">
-                Активні
+                {tx("Активні", "Aktivní")}
               </p>
 
               <p className="mt-1 text-3xl font-bold text-green-800">
@@ -1362,17 +1347,17 @@ export default function EmployeesPage() {
                   {accessEmployee?.id === employee.id && (
                     <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-5">
                       <h3 className="text-lg font-bold text-gray-900">
-                        🔐 Додати доступ до системи
+                        {tx("🔐 Додати доступ до системи", "🔐 Přidat přístup do systému")}
                       </h3>
 
                       <p className="mt-1 text-sm text-gray-600">
-                        Створіть логін і пароль для цього працівника.
+                        {tx("Створіть логін і пароль для цього працівника.", "Vytvořte login a heslo pro tohoto zaměstnance.")}
                       </p>
 
                       <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            Логін
+                            {tx("Логін", "Login")}
                           </label>
                           <input
                             type="text"
@@ -1387,7 +1372,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            Пароль
+                            {tx("Пароль", "Heslo")}
                           </label>
                           <input
                             type="password"
@@ -1396,7 +1381,7 @@ export default function EmployeesPage() {
                               setAccessPassword(event.target.value)
                             }
                             className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
-                            placeholder="Мінімум 6 символів"
+                            placeholder={tx("Мінімум 6 символів", "Minimálně 6 znaků")}
                             autoComplete="new-password"
                           />
                         </div>
@@ -1409,7 +1394,7 @@ export default function EmployeesPage() {
                           disabled={accessSaving}
                           className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                         >
-                          {accessSaving ? "Створення..." : "Створити доступ"}
+                          {accessSaving ? tx("Створення...", "Vytváření...") : tx("Створити доступ", "Vytvořit přístup")}
                         </button>
 
                         <button
@@ -1418,7 +1403,7 @@ export default function EmployeesPage() {
                           disabled={accessSaving}
                           className="rounded-xl border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                         >
-                          Скасувати
+                          {tx("Скасувати", "Zrušit")}
                         </button>
                       </div>
                     </div>
@@ -1437,7 +1422,7 @@ export default function EmployeesPage() {
                       className="rounded-xl bg-gray-50 p-5"
                     >
                       <h2 className="text-xl font-bold text-gray-900">
-                        Редагування працівника
+                        {tx("Редагування працівника", "Úprava zaměstnance")}
                       </h2>
 
                       <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -1446,7 +1431,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            Ім'я та прізвище
+                            {tx("Ім'я та прізвище", "Jméno a příjmení")}
                           </label>
 
                           <input
@@ -1472,7 +1457,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            Кількість змін
+                            {tx("Кількість змін", "Počet směn")}
                           </label>
 
                           <select
@@ -1503,11 +1488,11 @@ export default function EmployeesPage() {
                             className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3"
                           >
                             <option value="2">
-                              2 зміни
+                              {tx("2 зміни", "2 směny")}
                             </option>
 
                             <option value="3">
-                              3 зміни
+                              {tx("3 зміни", "3 směny")}
                             </option>
                           </select>
                         </div>
@@ -1516,7 +1501,7 @@ export default function EmployeesPage() {
 
                         <div className="md:col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-5">
                           <h3 className="text-lg font-bold text-gray-900">
-                            🔄 Зміни графіка
+                            {tx("🔄 Зміни графіка", "🔄 Změny rozvrhu")}
                           </h3>
 
                           <p className="mt-1 text-sm text-gray-600">
@@ -1526,7 +1511,7 @@ export default function EmployeesPage() {
                           <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
                             <div>
                               <label className="block text-sm font-medium text-gray-700">
-                                З дати
+                                {tx("З дати", "Od data")}
                               </label>
                               <input
                                 type="date"
@@ -1541,7 +1526,7 @@ export default function EmployeesPage() {
 
                             <div>
                               <label className="block text-sm font-medium text-gray-700">
-                                Нова зміна
+                                {tx("Нова зміна", "Nová směna")}
                               </label>
                               <select
                                 value={newChangeShift}
@@ -1573,12 +1558,12 @@ export default function EmployeesPage() {
 
                           <div className="mt-5">
                             <p className="text-sm font-semibold text-gray-800">
-                              Історія / заплановані зміни
+                              {tx("Історія / запланované změny", "Historie / plánované změny")}
                             </p>
 
                             {scheduleChangesLoading ? (
                               <p className="mt-2 text-sm text-gray-500">
-                                Завантаження...
+                                {tx("Завантаження...", "Načítání...")}
                               </p>
                             ) : scheduleChanges.length === 0 ? (
                               <p className="mt-2 rounded-lg bg-white p-3 text-sm text-gray-500">
@@ -1610,7 +1595,7 @@ export default function EmployeesPage() {
                                       disabled={saving}
                                       className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                                     >
-                                      🗑 Видалити
+                                      {tx("🗑 Видалити", "🗑 Smazat")}
                                     </button>
                                   </div>
                                 ))}
@@ -1623,7 +1608,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            Початок циклу
+                            {tx("Початок циклу", "Začátek cyklu")}
                           </label>
 
                           <input
@@ -1649,7 +1634,7 @@ export default function EmployeesPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700">
-                            Днів відпустки на рік
+                            {tx("Днів відпустки на рік", "Dnů dovolené za rok")}
                           </label>
 
                           <input
@@ -1702,9 +1687,7 @@ export default function EmployeesPage() {
                         </label>
 
                         <p className="mt-2 text-sm text-emerald-700">
-                          Team Leader має окреме
-                          правило конфліктів
-                          відпустки.
+                          {tx("Team Leader має окреме правило конфліктів відпустки.", "Team Leader má samostatné pravidlo pro konflikty dovolené.")}
                         </p>
                       </div>
 
@@ -1717,7 +1700,7 @@ export default function EmployeesPage() {
                           }
                           className="rounded-xl border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 hover:bg-gray-100"
                         >
-                          Скасувати
+                          {tx("Скасувати", "Zrušit")}
                         </button>
 
                         <button
@@ -1728,8 +1711,8 @@ export default function EmployeesPage() {
                           className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                         >
                           {saving
-                            ? "Збереження..."
-                            : "Зберегти зміни"}
+                            ? tx("Збереження...", "Ukládání...")
+                            : tx("Зберегти зміни", "Uložit změny")}
                         </button>
 
                       </div>
@@ -1755,18 +1738,18 @@ export default function EmployeesPage() {
 
                             {employee.active ? (
                               <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                                Активний
+                                {tx("Активний", "Aktivní")}
                               </span>
                             ) : (
                               <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-600">
-                                Неактивний
+                                {tx("Неактивний", "Neaktivní")}
                               </span>
                             )}
 
                             {employee.role ===
                               "admin" && (
                               <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                                Адміністратор
+                                {tx("Адміністратор", "Administrátor")}
                               </span>
                             )}
 
@@ -1782,37 +1765,37 @@ export default function EmployeesPage() {
                             {
                               employee.schedule_type
                             }{" "}
-                            зміни ·{" "}
-                            Початкова зміна:{" "}
+                            {tx("зміни", "směny")} ·{" "}
+                            {tx("Початкова зміна:", "Počáteční směna:")} {" "}
                             {getShiftName(
                               employee.initial_shift
                             )}
                           </p>
 
                           <p className="mt-1 text-sm text-gray-500">
-                            Початок циклу:{" "}
+                            {tx("Початок циклу:", "Začátek cyklu:")} {" "}
                             {
                               employee.cycle_start_date
                             }
                           </p>
 
                           <p className="mt-1 text-sm text-gray-500">
-                            Відпустка:{" "}
+                            {tx("Відпустка:", "Dovolená:")} {" "}
                             {
                               employee.vacation_days_per_year
                             }{" "}
-                            днів на рік
+                            {tx("днів на рік", "dnů za rok")}
                           </p>
 
                           <p className="mt-1 text-sm text-gray-500">
-                            Доступ до системи:{" "}
+                            {tx("Доступ до системи:", "Přístup do systému:")} {" "}
                             {employee.auth_user_id ? (
                               <span className="font-semibold text-green-600">
-                                Є
+                                {tx("Є", "Ano")}
                               </span>
                             ) : (
                               <span className="font-semibold text-red-600">
-                                Немає
+                                {tx("Немає", "Ne")}
                               </span>
                             )}
                           </p>
@@ -1842,7 +1825,7 @@ export default function EmployeesPage() {
                             }
                             className="rounded-xl border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-700 hover:bg-gray-100"
                           >
-                            Редагувати
+                            {tx("Редагувати", "Upravit")}
                           </button>
 
                           <button
@@ -1859,7 +1842,7 @@ export default function EmployeesPage() {
                             }`}
                           >
                             {employee.team_leader
-                              ? "Зняти Team Leader"
+                              ? tx("Зняти Team Leader", "Odebrat Team Leader")
                               : "👑 Team Leader"}
                           </button>
 
@@ -1877,8 +1860,8 @@ export default function EmployeesPage() {
                             }`}
                           >
                             {employee.active
-                              ? "Деактивувати"
-                              : "Активувати"}
+                              ? tx("Деактивувати", "Deaktivovat")
+                              : tx("Активувати", "Aktivovat")}
                           </button>
 
                         </div>
