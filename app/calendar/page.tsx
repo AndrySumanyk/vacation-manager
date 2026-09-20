@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useLanguage } from "@/components/LanguageProvider";
 import { supabase } from "@/lib/supabase";
+import { getCurrentEmployee } from "@/lib/auth";
 import {
   getShiftForDate,
   isWorkingDay,
@@ -103,17 +103,25 @@ function getMonthDays(
 }
 
 function getWeekdayName(
-  dateString: string,
-  language: "uk" | "cs"
+  dateString: string
 ) {
-  const date = parseDate(dateString);
+  const date = parseDate(
+    dateString
+  );
 
-  const names =
-    language === "cs"
-      ? ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
-      : ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+  const names = [
+    "Нд",
+    "Пн",
+    "Вт",
+    "Ср",
+    "Чт",
+    "Пт",
+    "Сб",
+  ];
 
-  return names[date.getDay()];
+  return names[
+    date.getDay()
+  ];
 }
 
 function getShiftCode(
@@ -131,17 +139,16 @@ function getShiftCode(
 }
 
 function getShiftName(
-  shift: Shift,
-  language: "uk" | "cs"
+  shift: Shift
 ) {
-  if (language === "cs") {
-    if (shift === "early") return "Ranní";
-    if (shift === "day") return "Odpolední";
-    return "Noční";
+  if (shift === "early") {
+    return "Рання";
   }
 
-  if (shift === "early") return "Ранкова";
-  if (shift === "day") return "Денна";
+  if (shift === "day") {
+    return "Обідня";
+  }
+
   return "Нічна";
 }
 
@@ -215,7 +222,6 @@ function rangesOverlap(
 
 export default function CalendarPage() {
   const today = new Date();
-  const { language, t } = useLanguage();
 
   const [currentYear, setCurrentYear] =
     useState(2027);
@@ -225,6 +231,12 @@ export default function CalendarPage() {
 
   const [employees, setEmployees] =
     useState<Employee[]>([]);
+
+  const [currentEmployee, setCurrentEmployee] =
+    useState<{
+      role: string;
+      team_leader: boolean;
+    } | null>(null);
 
   const [vacationRequests, setVacationRequests] =
     useState<VacationRequest[]>([]);
@@ -246,6 +258,9 @@ export default function CalendarPage() {
     setError("");
 
     try {
+      const employee = await getCurrentEmployee();
+      setCurrentEmployee(employee);
+
       const [
         employeesResult,
         scheduleChangesResult,
@@ -398,7 +413,7 @@ export default function CalendarPage() {
       );
 
       setError(
-        t("calendar.loadError")
+        "Не вдалося завантажити календар."
       );
     }
 
@@ -708,7 +723,7 @@ export default function CalendarPage() {
       currentMonth,
       1
     ).toLocaleDateString(
-      language === "cs" ? "cs-CZ" : "uk-UA",
+      "uk-UA",
       {
         month: "long",
         year: "numeric",
@@ -734,7 +749,7 @@ export default function CalendarPage() {
       <main className="h-screen bg-gray-50 p-4">
         <div className="mx-auto max-w-[1800px]">
           <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
-            {t("common.loading")}...
+            Завантаження календаря...
           </div>
         </div>
       </main>
@@ -754,15 +769,25 @@ export default function CalendarPage() {
             <div>
               <div className="flex items-center gap-3">
 
-                <Link
-                  href="/admin"
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
-                >
-                  {t("nav.admin")}
-                </Link>
+                {currentEmployee?.role === "admin" ||
+                currentEmployee?.team_leader ? (
+                  <Link
+                    href="/admin"
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                  >
+                    ← Адмін
+                  </Link>
+                ) : (
+                  <Link
+                    href="/"
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                  >
+                    ← Назад
+                  </Link>
+                )}
 
                 <h1 className="text-xl font-bold text-gray-900">
-                  🗓️ {t("calendar.title")}
+                  🗓️ Календар
                 </h1>
 
               </div>
@@ -794,7 +819,7 @@ export default function CalendarPage() {
                 }
                 className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
               >
-                {language === "cs" ? "Leden 2027" : "Січень 2027"}
+                Січень 2027
               </button>
 
               <button
@@ -828,57 +853,57 @@ export default function CalendarPage() {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-700">
 
             <span>
-              <strong>R</strong> — {language === "cs" ? "ranní" : "ранкова"}
+              <strong>R</strong> — рання
             </span>
 
             <span>
-              <strong>O</strong> — {language === "cs" ? "odpolední" : "денна"}
+              <strong>O</strong> — обідня
             </span>
 
             <span>
-              <strong>N</strong> — {language === "cs" ? "noční" : "нічна"}
+              <strong>N</strong> — нічна
             </span>
 
             <span>
               <span className="inline-flex rounded bg-yellow-100 px-2 py-0.5 font-semibold">
                 D
               </span>{" "}
-              {t("vacation.pending")}
+              очікує
             </span>
 
             <span>
               <span className="inline-flex rounded bg-green-500 px-2 py-0.5 font-semibold">
                 D
               </span>{" "}
-              {t("vacation.approved")}
+              погоджено
             </span>
 
             <span>
               <span className="inline-flex rounded bg-gray-100 px-2 py-0.5 font-semibold">
                 ВИХ
               </span>{" "}
-              {t("calendar.dayOff")}
+              вихідний
             </span>
 
             <span>
               <span className="inline-flex rounded bg-red-100 px-2 py-0.5 font-semibold">
                 ★
               </span>{" "}
-              {t("calendar.holiday")}
+              свято
             </span>
 
             <span>
               <span className="inline-flex rounded bg-orange-100 px-2 py-0.5 font-semibold">
                 ВХ
               </span>{" "}
-              {t("calendar.dayOff")} день
+              вихідний день
             </span>
 
             <span>
               <span className="inline-flex rounded border-2 border-red-500 px-1 py-0.5 font-semibold">
                 !
               </span>{" "}
-              {language === "cs" ? "konflikt" : "конфлікт"}
+              конфлікт
             </span>
 
             <span className="rounded bg-blue-500 px-2 py-0.5 font-semibold text-blue-950">
@@ -902,7 +927,7 @@ export default function CalendarPage() {
                 <tr>
 
                   <th className="sticky left-0 top-0 z-30 min-w-[210px] border-b border-r border-gray-300 bg-white px-3 py-2 text-left text-sm font-bold text-gray-700">
-                    {language === "cs" ? "Zaměstnanec" : "Працівник"}
+                    Працівник
                   </th>
 
                   {monthDays.map(
@@ -917,8 +942,7 @@ export default function CalendarPage() {
 
                       const weekday =
                         getWeekdayName(
-                          dateString,
-                          language
+                          dateString
                         );
 
                       const holiday =
@@ -1016,7 +1040,7 @@ export default function CalendarPage() {
                             {employee.team_leader && (
                               <span
                                 className="text-lg"
-                                title={language === "cs" ? "Team Leader" : "Team Leader"}
+                                title="Team Leader"
                               >
                                 👑
                               </span>
@@ -1135,7 +1159,7 @@ export default function CalendarPage() {
                                   "#22c55e";
                               } else {
                                 background =
-                                  "#dcb000";
+                                  "#fef3c7";
                               }
                             }
 
@@ -1149,14 +1173,13 @@ export default function CalendarPage() {
                                     ? holiday.name
                                     : dayOff
                                     ? `${getShiftName(
-                                        shift,
-                                        language
+                                        shift
                                       )}: вихідний`
                                     : vacation
                                     ? vacation.status ===
                                       "approved"
-                                      ? language === "cs" ? "Schválená dovolená" : "Погоджена відпустка"
-                                      : language === "cs" ? "Čeká na schválení" : "Очікує погодження"
+                                      ? "Погоджена відпустка"
+                                      : "Очікує погодження"
                                     : ""
                                 }
                                 className={`border-b border-r border-gray-300 p-1 text-center align-middle ${
@@ -1280,35 +1303,35 @@ export default function CalendarPage() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-gray-600">
 
             <span>
-              {language === "cs" ? "Zaměstnanců:" : "Працівників:"}{" "}
+              Працівників:{" "}
               <strong className="text-gray-900">
                 {employees.length}
               </strong>
             </span>
 
             <span>
-              {language === "cs" ? "Čekají:" : "Очікують:"}{" "}
+              Очікують:{" "}
               <strong className="text-yellow-700">
                 {pendingCount}
               </strong>
             </span>
 
             <span>
-              {language === "cs" ? "Schváleno:" : "Погоджено:"}{" "}
+              Погоджено:{" "}
               <strong className="text-green-800">
                 {approvedCount}
               </strong>
             </span>
 
             <span>
-              {language === "cs" ? "Volných dnů pro směny:" : "Вихідних для змін:"}{" "}
+              Вихідних для змін:{" "}
               <strong className="text-gray-900">
                 {daysOff.length}
               </strong>
             </span>
 
             <span>
-              {language === "cs" ? "Svátků:" : "Свят:"}{" "}
+              Свят:{" "}
               <strong className="text-red-700">
                 {holidays.length}
               </strong>
