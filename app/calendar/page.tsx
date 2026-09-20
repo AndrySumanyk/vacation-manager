@@ -702,10 +702,9 @@ export default function CalendarPage() {
     }
   }
 
-  function goToToday() {
-    const now = new Date();
-    setCurrentYear(now.getFullYear());
-    setCurrentMonth(now.getMonth());
+  function goToJanuary2027() {
+    setCurrentYear(2027);
+    setCurrentMonth(0);
   }
 
   const monthName =
@@ -796,11 +795,11 @@ export default function CalendarPage() {
               <button
                 type="button"
                 onClick={
-                  goToToday
+                  goToJanuary2027
                 }
                 className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
               >
-                📅 Сьогодні
+                Січень 2027
               </button>
 
               <button
@@ -846,7 +845,7 @@ export default function CalendarPage() {
             </span>
 
             <span>
-              <span className="inline-flex rounded bg-yellow-400 px-2 py-0.5 font-semibold text-yellow-950">
+              <span className="inline-flex rounded bg-yellow-100 px-2 py-0.5 font-semibold">
                 D
               </span>{" "}
               очікує
@@ -880,8 +879,11 @@ export default function CalendarPage() {
               вихідний день
             </span>
 
-            <span className="inline-flex items-center gap-1 rounded-lg border-2 border-red-400 bg-red-50 px-2 py-1 font-semibold text-red-700">
-              ⚠️ конфлікт
+            <span>
+              <span className="inline-flex rounded border-2 border-red-500 px-1 py-0.5 font-semibold">
+                !
+              </span>{" "}
+              конфлікт
             </span>
 
             <span className="rounded bg-blue-500 px-2 py-0.5 font-semibold text-blue-950">

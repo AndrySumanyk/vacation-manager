@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { supabase } from "@/lib/supabase";
 
 type Shift = "early" | "day" | "night";
@@ -29,7 +30,6 @@ type Employee = {
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [employeeSearch, setEmployeeSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
@@ -925,10 +925,6 @@ export default function EmployeesPage() {
 
   
 
-  const filteredEmployees = employees.filter((employee) =>
-    employee.full_name.toLocaleLowerCase().includes(employeeSearch.trim().toLocaleLowerCase())
-  );
-
   const activeEmployees =
     employees.filter(
       (employee) =>
@@ -991,7 +987,9 @@ export default function EmployeesPage() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <LanguageSwitcher />
+
               <Link
                 href="/admin"
                 className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-semibold text-gray-700 hover:bg-gray-100"
@@ -1342,37 +1340,11 @@ export default function EmployeesPage() {
 
           </div>
 
-          {/* Пошук працівника */}
-
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-5">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700">🔎 Пошук працівника</label>
-                <p className="mt-1 text-xs text-gray-500">Введіть ім'я або частину імені працівника.</p>
-              </div>
-              <div className="flex w-full gap-2 md:max-w-xl">
-                <input
-                  type="text"
-                  value={employeeSearch}
-                  onChange={(event) => setEmployeeSearch(event.target.value)}
-                  placeholder="Наприклад: Symaniuk Andrii"
-                  className="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-                {employeeSearch && (
-                  <button type="button" onClick={() => setEmployeeSearch("")} className="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100">
-                    Очистити
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="mt-3 text-xs text-gray-500">Показано: <strong>{filteredEmployees.length}</strong> з <strong>{employees.length}</strong> працівників</div>
-          </div>
-
           {/* Список працівників */}
 
           <div className="mt-8 space-y-4">
 
-            {filteredEmployees.map(
+            {employees.map(
               (employee) => (
                 <div
                   key={
