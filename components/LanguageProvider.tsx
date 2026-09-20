@@ -16,10 +16,7 @@ type LanguageContextType = {
   t: (key: string) => string;
 };
 
-const translations: Record<
-  Language,
-  Record<string, string>
-> = {
+const translations: Record<Language, Record<string, string>> = {
   uk: {
     // LANGUAGE
     "language.uk": "Українська",
@@ -197,44 +194,32 @@ const translations: Record<
   },
 };
 
-const LanguageContext =
-  createContext<LanguageContextType | null>(null);
+const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [language, setLanguageState] =
-    useState<Language>("uk");
-
-  const [ready, setReady] = useState(false);
+  const [language, setLanguageState] = useState<Language>("uk");
 
   useEffect(() => {
-    const savedLanguage =
-      window.localStorage.getItem(
-        "vacation-manager-language"
-      );
+    const savedLanguage = window.localStorage.getItem(
+      "vacation-manager-language"
+    );
 
-    if (
-      savedLanguage === "uk" ||
-      savedLanguage === "cs"
-    ) {
+    if (savedLanguage === "uk" || savedLanguage === "cs") {
       setLanguageState(savedLanguage);
-      setReady(true);
       return;
     }
 
-    const browserLanguage =
-      navigator.language.toLowerCase();
+    const browserLanguage = navigator.language.toLowerCase();
 
     if (browserLanguage.startsWith("cs")) {
       setLanguageState("cs");
     } else {
       setLanguageState("uk");
     }
-
-    setReady(true);
   }, []);
 
   function setLanguage(nextLanguage: Language) {
@@ -246,23 +231,14 @@ export function LanguageProvider({
     );
   }
 
-  const value = useMemo(
+  const value = useMemo<LanguageContextType>(
     () => ({
       language,
       setLanguage,
-      t: (key: string) =>
-        translations[language][key] ?? key,
+      t: (key: string) => translations[language][key] ?? key,
     }),
     [language]
   );
-
-  if (!ready) {
-    return (
-      <LanguageContext.Provider value={value}>
-        {children}
-      </LanguageContext.Provider>
-    );
-  }
 
   return (
     <LanguageContext.Provider value={value}>
@@ -272,8 +248,7 @@ export function LanguageProvider({
 }
 
 export function useLanguage() {
-  const context =
-    useContext(LanguageContext);
+  const context = useContext(LanguageContext);
 
   if (!context) {
     throw new Error(
