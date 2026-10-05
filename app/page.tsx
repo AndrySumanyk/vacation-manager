@@ -162,6 +162,12 @@ export default function Home() {
   const [endDate, setEndDate] =
     useState("");
 
+  const [openDatePicker, setOpenDatePicker] =
+    useState<"start" | "end" | null>(null);
+
+  const [pickerMonth, setPickerMonth] =
+    useState(() => new Date());
+
   const [saving, setSaving] =
     useState(false);
 
@@ -490,6 +496,137 @@ export default function Home() {
     setCheckingConflict(false);
   }
 
+  function parseDateValue(value: string) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  function formatDateValue(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function openDatePickerFor(type: "start" | "end") {
+    const selectedDate =
+      type === "start"
+        ? startDate
+        : endDate || startDate;
+
+    if (selectedDate) {
+      setPickerMonth(parseDateValue(selectedDate));
+    } else {
+      setPickerMonth(new Date());
+    }
+
+    setOpenDatePicker(type);
+  }
+
+  function changePickerMonth(offset: number) {
+    setPickerMonth(
+      (current) =>
+        new Date(
+          current.getFullYear(),
+          current.getMonth() + offset,
+          1
+        )
+    );
+  }
+
+  function getPickerDays() {
+    const year = pickerMonth.getFullYear();
+    const month = pickerMonth.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const mondayFirstOffset = (firstDay.getDay() + 6) % 7;
+    const days: (Date | null)[] = [];
+
+    for (let index = 0; index < mondayFirstOffset; index++) {
+      days.push(null);
+    }
+
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      days.push(new Date(year, month, day));
+    }
+
+    while (days.length % 7 !== 0) {
+      days.push(null);
+    }
+
+    return days;
+  }
+
+  function selectPickerDate(date: Date) {
+    const value = formatDateValue(date);
+
+    if (openDatePicker === "start") {
+      void handleStartDateChange(value);
+
+      if (endDate && value > endDate) {
+        setEndDate("");
+      }
+
+      setOpenDatePicker(null);
+      return;
+    }
+
+    if (openDatePicker === "end") {
+      if (startDate && value < startDate) {
+        return;
+      }
+
+      void handleEndDateChange(value);
+      setOpenDatePicker(null);
+    }
+  }
+
+  function getPickerMonthTitle() {
+    return pickerMonth.toLocaleDateString(
+      language === "cs" ? "cs-CZ" : "uk-UA",
+      {
+        month: "long",
+        year: "numeric",
+      }
+    );
+  }
+
+  function getPickerWeekdayNames() {
+    return language === "cs"
+      ? ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"]
+      : ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+  }
+
+  function isPickerDateDisabled(date: Date) {
+    if (openDatePicker !== "end" || !startDate) {
+      return false;
+    }
+
+    return formatDateValue(date) < startDate;
+  }
+
+  function isPickerDateSelected(date: Date) {
+    const value = formatDateValue(date);
+
+    return (
+      (openDatePicker === "start" && value === startDate) ||
+      (openDatePicker === "end" && value === endDate)
+    );
+  }
+
+  function isPickerToday(date: Date) {
+    const today = new Date();
+
+    return (
+      date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate()
+    );
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
 
@@ -501,6 +638,8 @@ export default function Home() {
     setEndDate("");
     setConflicts([]);
     setConflictChecked(false);
+    setOpenDatePicker(null);
+    setPickerMonth(new Date());
     setShowForm(true);
   }
 
@@ -699,6 +838,7 @@ export default function Home() {
 
     setStartDate("");
     setEndDate("");
+    setOpenDatePicker(null);
     setConflicts([]);
     setConflictChecked(false);
     setShowForm(false);
@@ -1326,6 +1466,7 @@ export default function Home() {
                 type="button"
                 onClick={() => {
                   setShowForm(false);
+                  setOpenDatePicker(null);
                   setConflicts([]);
                   setConflictChecked(false);
                 }}
@@ -1348,17 +1489,84 @@ export default function Home() {
                   {tr("Дата початку", "Datum začátku")}
                 </label>
 
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(event) =>
-                    handleStartDateChange(
-                      event.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"
-                  required
-                />
+                <button
+                  type="button"
+                  onClick={() => openDatePickerFor("start")}
+                  className="mt-2 flex w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-4 py-3 text-left hover:bg-gray-50"
+                >
+                  <span className={startDate ? "text-gray-900" : "text-gray-400"}>
+                    {startDate || tr("Оберіть дату", "Vyberte datum")}
+                  </span>
+                  <span>📅</span>
+                </button>
+
+                {openDatePicker === "start" && (
+                  <div className="relative z-20 mt-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => changePickerMonth(-1)}
+                        className="rounded-lg px-3 py-2 text-lg font-bold text-gray-600 hover:bg-gray-100"
+                        aria-label={tr("Попередній місяць", "Předchozí měsíc")}
+                      >
+                        ‹
+                      </button>
+
+                      <p className="font-semibold capitalize text-gray-900">
+                        {getPickerMonthTitle()}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => changePickerMonth(1)}
+                        className="rounded-lg px-3 py-2 text-lg font-bold text-gray-600 hover:bg-gray-100"
+                        aria-label={tr("Наступний місяць", "Další měsíc")}
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500">
+                      {getPickerWeekdayNames().map((day) => (
+                        <div key={day} className="py-1">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-1 grid grid-cols-7 gap-1">
+                      {getPickerDays().map((date, index) => {
+                        if (!date) {
+                          return <div key={`empty-${index}`} className="h-10" />;
+                        }
+
+                        const disabled = isPickerDateDisabled(date);
+                        const selected = isPickerDateSelected(date);
+                        const today = isPickerToday(date);
+
+                        return (
+                          <button
+                            key={formatDateValue(date)}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => selectPickerDate(date)}
+                            className={`h-10 rounded-lg text-sm font-medium transition ${
+                              disabled
+                                ? "cursor-not-allowed text-gray-300"
+                                : selected
+                                  ? "bg-blue-600 text-white"
+                                  : today
+                                    ? "border border-blue-400 text-blue-700 hover:bg-blue-50"
+                                    : "text-gray-700 hover:bg-blue-50"
+                            }`}
+                          >
+                            {date.getDate()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ДАТА ЗАВЕРШЕННЯ */}
@@ -1368,17 +1576,83 @@ export default function Home() {
                   {tr("Дата завершення", "Datum konce")}
                 </label>
 
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(event) =>
-                    handleEndDateChange(
-                      event.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"
-                  required
-                />
+                <button
+                  type="button"
+                  onClick={() => openDatePickerFor("end")}
+                  className="mt-2 flex w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-4 py-3 text-left hover:bg-gray-50"
+                >
+                  <span className={endDate ? "text-gray-900" : "text-gray-400"}>
+                    {endDate || tr("Оберіть дату", "Vyberte datum")}
+                  </span>
+                  <span>📅</span>
+                </button>
+
+                {openDatePicker === "end" && (
+                  <div className="relative z-20 mt-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => changePickerMonth(-1)}
+                        className="rounded-lg px-3 py-2 text-lg font-bold text-gray-600 hover:bg-gray-100"
+                        aria-label={tr("Попередній місяць", "Předchozí měsíc")}
+                      >
+                        ‹
+                      </button>
+
+                      <p className="font-semibold capitalize text-gray-900">
+                        {getPickerMonthTitle()}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => changePickerMonth(1)}
+                        className="rounded-lg px-3 py-2 text-lg font-bold text-gray-600 hover:bg-gray-100"
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500">
+                      {getPickerWeekdayNames().map((day) => (
+                        <div key={day} className="py-1">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-1 grid grid-cols-7 gap-1">
+                      {getPickerDays().map((date, index) => {
+                        if (!date) {
+                          return <div key={`empty-${index}`} className="h-10" />;
+                        }
+
+                        const disabled = isPickerDateDisabled(date);
+                        const selected = isPickerDateSelected(date);
+                        const today = isPickerToday(date);
+
+                        return (
+                          <button
+                            key={formatDateValue(date)}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => selectPickerDate(date)}
+                            className={`h-10 rounded-lg text-sm font-medium transition ${
+                              disabled
+                                ? "cursor-not-allowed text-gray-300"
+                                : selected
+                                  ? "bg-blue-600 text-white"
+                                  : today
+                                    ? "border border-blue-400 text-blue-700 hover:bg-blue-50"
+                                    : "text-gray-700 hover:bg-blue-50"
+                            }`}
+                          >
+                            {date.getDate()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* КІЛЬКІСТЬ РОБОЧИХ ДНІВ */}
@@ -1557,6 +1831,7 @@ export default function Home() {
                   type="button"
                   onClick={() => {
                     setShowForm(false);
+                    setOpenDatePicker(null);
                     setConflicts([]);
                     setConflictChecked(false);
                   }}
