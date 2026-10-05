@@ -758,8 +758,97 @@ export default function CalendarPage() {
   }
 
   return (
+    <>
+      <style jsx global>{`
+          @media (max-width: 639px) {
+            .calendar-mobile-compact .calendar-table {
+              width: max-content;
+              border-collapse: collapse;
+            }
+
+            .calendar-mobile-compact .calendar-name {
+              width: 108px !important;
+              min-width: 108px !important;
+              max-width: 108px !important;
+              padding: 3px 4px !important;
+            }
+
+            .calendar-mobile-compact .calendar-day-head {
+              width: 31px !important;
+              min-width: 31px !important;
+              max-width: 31px !important;
+              padding: 2px 0 !important;
+            }
+
+            .calendar-mobile-compact .calendar-row {
+              height: 32px !important;
+            }
+
+            .calendar-mobile-compact .calendar-cell {
+              width: 31px !important;
+              min-width: 31px !important;
+              max-width: 31px !important;
+              padding: 0 !important;
+            }
+
+            .calendar-mobile-compact .calendar-cell-inner {
+              width: 29px !important;
+              min-width: 29px !important;
+              height: 29px !important;
+              border-radius: 3px !important;
+            }
+
+            .calendar-mobile-compact .calendar-name-text {
+              font-size: 9px !important;
+              line-height: 11px !important;
+            }
+
+            .calendar-mobile-compact .calendar-shift {
+              font-size: 9px !important;
+              line-height: 10px !important;
+            }
+
+            .calendar-mobile-compact .calendar-vacation-code {
+              font-size: 8px !important;
+              line-height: 9px !important;
+            }
+
+            .calendar-mobile-compact .calendar-weekday {
+              font-size: 7px !important;
+              line-height: 8px !important;
+            }
+
+            .calendar-mobile-compact .calendar-day-number {
+              font-size: 9px !important;
+              line-height: 10px !important;
+            }
+
+            .calendar-mobile-compact .calendar-legend {
+              font-size: 9px !important;
+              gap: 6px !important;
+            }
+
+            .calendar-mobile-compact .calendar-header-controls button {
+              padding: 5px 7px !important;
+              font-size: 11px !important;
+            }
+
+            .calendar-mobile-compact .calendar-title {
+              font-size: 16px !important;
+            }
+
+            .calendar-mobile-compact .calendar-month {
+              font-size: 10px !important;
+            }
+
+            .calendar-mobile-compact .calendar-team-label {
+              display: none !important;
+            }
+          }
+        `}</style>
+
     <main className="h-screen overflow-hidden bg-gray-50 p-3">
-      <div className="mx-auto flex h-full max-w-[1800px] flex-col">
+      <div className="calendar-mobile-compact mx-auto flex h-full max-w-[1800px] flex-col">
 
         {/* HEADER */}
 
@@ -787,19 +876,19 @@ export default function CalendarPage() {
                   </Link>
                 )}
 
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="calendar-title text-xl font-bold text-gray-900">
                   🗓️ {language === "cs" ? "Kalendář" : "Календар"}
                 </h1>
 
               </div>
 
-              <div className="mt-1 text-sm capitalize text-gray-500">
+              <div className="calendar-month mt-1 text-sm capitalize text-gray-500">
                 {monthName}
               </div>
             </div>
 
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="calendar-header-controls flex flex-wrap items-center gap-2">
 
               <LanguageSwitcher />
 
@@ -851,7 +940,7 @@ export default function CalendarPage() {
 
         <div className="mb-3 shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-2 shadow-sm">
 
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-700">
+          <div className="calendar-legend flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-700">
 
             <span>
               <strong>R</strong> — {language === "cs" ? "ranní" : "рання"}
@@ -920,14 +1009,14 @@ export default function CalendarPage() {
 
         <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
 
-          <div className="h-full overflow-auto">
+          <div className="h-full overflow-auto overscroll-x-contain">
 
-            <table className="border-collapse">
+            <table className="calendar-table border-collapse">
 
               <thead>
                 <tr>
 
-                  <th className="sticky left-0 top-0 z-30 min-w-[210px] border-b border-r border-gray-300 bg-white px-3 py-2 text-left text-sm font-bold text-gray-700">
+                  <th className="calendar-name sticky left-0 top-0 z-30 min-w-[210px] border-b border-r border-gray-300 bg-white px-3 py-2 text-left text-sm font-bold text-gray-700">
                     {language === "cs" ? "Zaměstnanec" : "Працівник"}
                   </th>
 
@@ -967,7 +1056,7 @@ export default function CalendarPage() {
                             holiday?.name ??
                             ""
                           }
-                          className={`sticky top-0 z-20 min-w-[58px] border-b border-r border-gray-300 px-1 py-2 text-center ${
+                          className={`calendar-day-head sticky top-0 z-20 min-w-[58px] border-b border-r border-gray-300 px-1 py-2 text-center ${
                             holiday
                               ? "bg-red-100 text-red-800"
                               : isWeekend
@@ -976,11 +1065,11 @@ export default function CalendarPage() {
                           }`}
                         >
 
-                          <div className="text-xs font-semibold">
+                          <div className="calendar-weekday text-xs font-semibold">
                             {weekday}
                           </div>
 
-                          <div className="text-sm font-bold">
+                          <div className="calendar-day-number text-sm font-bold">
                             {day}
                           </div>
 
@@ -1021,16 +1110,16 @@ export default function CalendarPage() {
 
                     return (
                       <tr
+                        className="calendar-row h-[54px]"
                         key={
                           employee.id
                         }
-                        className="h-[54px]"
                       >
 
                         {/* EMPLOYEE NAME */}
 
                         <td
-                          className="sticky left-0 z-10 border-b border-r border-gray-300 px-3 py-2"
+                          className="calendar-name sticky left-0 z-10 border-b border-r border-gray-300 px-3 py-2"
                           style={{
                             backgroundColor:
                               rowColor,
@@ -1050,14 +1139,14 @@ export default function CalendarPage() {
 
                             <div className="min-w-0">
 
-                              <div className="truncate text-sm font-semibold text-gray-900">
+                              <div className="calendar-name-text truncate text-sm font-semibold text-gray-900">
                                 {
                                   employee.full_name
                                 }
                               </div>
 
                               {employee.team_leader && (
-                                <div className="text-[10px] font-bold text-blue-800">
+                                <div className="calendar-team-label text-[10px] font-bold text-blue-800">
                                   TEAM LEADER
                                 </div>
                               )}
@@ -1202,7 +1291,7 @@ export default function CalendarPage() {
                               >
 
                                 <div
-                                  className={`flex h-10 min-w-[50px] items-center justify-center rounded-md ${
+                                  className={`calendar-cell-inner flex h-10 min-w-[50px] items-center justify-center rounded-md ${
                                     conflict &&
                                     vacation
                                       ? "ring-2 ring-inset ring-red-500"
@@ -1218,7 +1307,7 @@ export default function CalendarPage() {
                                       </span>
 
                                       {vacation && (
-                                        <span className="text-[9px] font-bold text-red-700">
+                                        <span className="calendar-vacation-code text-[9px] font-bold text-red-700">
                                           D
                                         </span>
                                       )}
@@ -1249,7 +1338,7 @@ export default function CalendarPage() {
                                     <div className="flex flex-col items-center">
 
                                       <span
-                                        className={`text-xs font-bold ${
+                                        className={`calendar-vacation-code text-xs font-bold ${
                                           vacation.status ===
                                           "approved"
                                             ? "text-green-800"
@@ -1259,7 +1348,7 @@ export default function CalendarPage() {
                                         D
                                       </span>
 
-                                      <span className="text-[9px] font-semibold text-gray-500">
+                                      <span className="calendar-shift text-[9px] font-semibold text-gray-500">
                                         {
                                           getShiftCode(
                                             shift
@@ -1269,7 +1358,7 @@ export default function CalendarPage() {
 
                                     </div>
                                   ) : workingDay ? (
-                                    <span className="text-xs font-bold text-gray-700">
+                                    <span className="calendar-shift text-xs font-bold text-gray-700">
                                       {
                                         getShiftCode(
                                           shift
@@ -1350,5 +1439,6 @@ export default function CalendarPage() {
 
       </div>
     </main>
+    </>
   );
 }
