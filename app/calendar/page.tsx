@@ -1240,7 +1240,10 @@ export default function CalendarPage() {
                             }
 
                             if (
-                              vacation
+                              vacation &&
+                              !isWeekend &&
+                              !holiday &&
+                              !dayOff
                             ) {
                               if (
                                 vacation.status ===
