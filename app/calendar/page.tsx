@@ -22,6 +22,7 @@ type Employee = {
   active: boolean;
   role: string;
   team_leader: boolean;
+  employee_group?: "main" | "pa";
   schedule_changes: ScheduleChange[];
 };
 
@@ -153,30 +154,41 @@ function getShiftName(
 function getEmployeeGroup(
   employee: Employee
 ) {
+  // Колірна група визначається останньою встановленою
+  // початковою зміною, а не зміною в конкретний день.
+  const latestScheduleChange =
+    [...(employee.schedule_changes ?? [])]
+      .sort((a, b) =>
+        b.effective_date.localeCompare(a.effective_date)
+      )[0];
+
+  const groupInitialShift =
+    latestScheduleChange?.initial_shift ?? employee.initial_shift;
+
   if (
     employee.schedule_type === 2 &&
-    employee.initial_shift === "early"
+    groupInitialShift === "early"
   ) {
     return 1;
   }
 
   if (
     employee.schedule_type === 2 &&
-    employee.initial_shift === "day"
+    groupInitialShift === "day"
   ) {
     return 2;
   }
 
   if (
     employee.schedule_type === 3 &&
-    employee.initial_shift === "early"
+    groupInitialShift === "early"
   ) {
     return 3;
   }
 
   if (
     employee.schedule_type === 3 &&
-    employee.initial_shift === "day"
+    groupInitialShift === "day"
   ) {
     return 4;
   }
@@ -278,7 +290,8 @@ export default function CalendarPage() {
               cycle_start_date,
               active,
               role,
-              team_leader
+              team_leader,
+              employee_group
             `
           )
           .eq("active", true),
@@ -568,11 +581,9 @@ export default function CalendarPage() {
                 )
             );
 
-          const teamLeaderIds =
-            new Set<string>();
-
-          const ordinaryIds =
-            new Set<string>();
+          const teamLeaderIds = new Set<string>();
+          const ordinaryIds = new Set<string>();
+          const paIds = new Set<string>();
 
           requestsForDate.forEach(
             (request) => {
@@ -587,7 +598,9 @@ export default function CalendarPage() {
                 return;
               }
 
-              if (
+              if (employee.employee_group === "pa") {
+                paIds.add(employee.id);
+              } else if (
                 employee.team_leader
               ) {
                 teamLeaderIds.add(
@@ -613,13 +626,11 @@ export default function CalendarPage() {
             );
           }
 
-          if (
-            ordinaryIds.size > 1
-          ) {
-            ordinaryIds.forEach(
-              (id) =>
-                conflictIds.add(id)
-            );
+          if (ordinaryIds.size > 1) {
+            ordinaryIds.forEach((id) => conflictIds.add(id));
+          }
+          if (paIds.size > 1) {
+            paIds.forEach((id) => conflictIds.add(id));
           }
 
           if (
@@ -1140,9 +1151,9 @@ export default function CalendarPage() {
                             <div className="min-w-0">
 
                               <div className="calendar-name-text truncate text-sm font-semibold text-gray-900">
-                                {
-                                  employee.full_name
-                                }
+                                
+                                  {employee.full_name}{employee.employee_group === "pa" ? " (PA)" : ""}
+                                
                               </div>
 
                               {employee.team_leader && (

@@ -15,6 +15,7 @@ type Employee = {
   initial_shift: "early" | "day" | "night";
   cycle_start_date: string;
   team_leader: boolean;
+  employee_group?: "main" | "pa";
   active: boolean;
   schedule_changes: ScheduleChange[];
 };
@@ -251,6 +252,7 @@ export default function AdminVacationsPage() {
               initial_shift,
               cycle_start_date,
               team_leader,
+              employee_group,
               active
             `
           )
@@ -525,10 +527,11 @@ export default function AdminVacationsPage() {
           тільки зі звичайним.
         */
 
-        if (
-          employee.team_leader !==
-          otherEmployee.team_leader
-        ) {
+        const currentGroup = employee.employee_group ?? "main";
+        const otherGroup = otherEmployee.employee_group ?? "main";
+        if (currentGroup === "pa" || otherGroup === "pa") {
+          if (currentGroup !== "pa" || otherGroup !== "pa") return false;
+        } else if (employee.team_leader !== otherEmployee.team_leader) {
           return false;
         }
 

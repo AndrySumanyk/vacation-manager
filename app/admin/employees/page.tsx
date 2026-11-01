@@ -27,6 +27,7 @@ type Employee = {
   role: string;
   auth_user_id: string | null;
   team_leader: boolean;
+  employee_group?: "main" | "pa";
 };
 
 export default function EmployeesPage() {
@@ -58,6 +59,7 @@ export default function EmployeesPage() {
 
   const [teamLeader, setTeamLeader] =
     useState(false);
+  const [employeeGroup, setEmployeeGroup] = useState<"main" | "pa">("main");
 
   const [saving, setSaving] = useState(false);
 
@@ -81,6 +83,7 @@ export default function EmployeesPage() {
 
   const [editTeamLeader, setEditTeamLeader] =
     useState(false);
+  const [editEmployeeGroup, setEditEmployeeGroup] = useState<"main" | "pa">("main");
 
   const [scheduleChanges, setScheduleChanges] =
     useState<ScheduleChange[]>([]);
@@ -162,7 +165,7 @@ export default function EmployeesPage() {
     } = await supabase
       .from("employees")
       .select(
-        "id, full_name, schedule_type, initial_shift, cycle_start_date, vacation_days_per_year, active, role, auth_user_id, team_leader"
+        "id, full_name, schedule_type, initial_shift, cycle_start_date, vacation_days_per_year, active, role, auth_user_id, team_leader, employee_group"
       )
       .order("full_name");
 
@@ -434,6 +437,7 @@ export default function EmployeesPage() {
 
           team_leader:
             teamLeader,
+          employee_group: employeeGroup,
         });
 
       if (employeeError) {
@@ -471,6 +475,7 @@ export default function EmployeesPage() {
       setVacationDays("25");
 
       setTeamLeader(false);
+      setEmployeeGroup("main");
 
       setShowForm(false);
 
@@ -527,6 +532,7 @@ export default function EmployeesPage() {
     setEditTeamLeader(
       employee.team_leader
     );
+    setEditEmployeeGroup(employee.employee_group ?? "main");
 
     setNewChangeDate("");
     setNewChangeShift(
@@ -768,6 +774,7 @@ export default function EmployeesPage() {
 
         team_leader:
           editTeamLeader,
+        employee_group: editEmployeeGroup,
       })
       .eq(
         "id",
@@ -1231,6 +1238,15 @@ export default function EmployeesPage() {
 
               </div>
 
+              {/* Група працівника */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700">Група працівника</label>
+                <select value={employeeGroup} onChange={(event) => setEmployeeGroup(event.target.value as "main" | "pa")} className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3">
+                  <option value="main">Основна</option>
+                  <option value="pa">Кваліта (PA)</option>
+                </select>
+              </div>
+
               {/* Team Leader */}
 
               <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
@@ -1660,7 +1676,16 @@ export default function EmployeesPage() {
 
                       </div>
 
-                      {/* Team Leader */}
+                      {/* Група працівника */}
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium text-gray-700">Група працівника</label>
+                        <select value={editEmployeeGroup} onChange={(event) => setEditEmployeeGroup(event.target.value as "main" | "pa")} className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3">
+                          <option value="main">Основна</option>
+                          <option value="pa">Кваліта (PA)</option>
+                        </select>
+                      </div>
+
+
 
                       <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                         <label className="flex cursor-pointer items-center gap-3">

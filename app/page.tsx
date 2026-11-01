@@ -15,6 +15,7 @@ type Employee = {
   cycle_start_date: string;
   vacation_days_per_year: number;
   team_leader: boolean;
+  employee_group?: "main" | "pa";
   schedule_changes?: ScheduleChange[];
 };
 
@@ -207,7 +208,7 @@ export default function Home() {
     const { data, error } = await supabase
       .from("employees")
       .select(
-        "id, full_name, schedule_type, initial_shift, cycle_start_date, vacation_days_per_year, team_leader"
+        "id, full_name, schedule_type, initial_shift, cycle_start_date, vacation_days_per_year, team_leader, employee_group"
       )
       .eq("auth_user_id", user.id)
       .eq("active", true)
@@ -440,7 +441,7 @@ export default function Home() {
       error: employeeError,
     } = await supabase
       .from("employees")
-      .select("id, full_name, team_leader")
+      .select("id, full_name, team_leader, employee_group")
       .in("id", employeeIds);
 
     if (employeeError) {
@@ -472,10 +473,12 @@ export default function Home() {
           return false;
         }
 
-        return (
-          otherEmployee.team_leader ===
-          employee.team_leader
-        );
+        const currentGroup = employee.employee_group ?? "main";
+        const otherGroup = otherEmployee.employee_group ?? "main";
+        if (currentGroup === "pa" || otherGroup === "pa") {
+          return currentGroup === "pa" && otherGroup === "pa";
+        }
+        return otherEmployee.team_leader === employee.team_leader;
       });
 
     const conflictsWithNames: ConflictRequest[] =
@@ -762,7 +765,7 @@ export default function Home() {
         error: finalEmployeeError,
       } = await supabase
         .from("employees")
-        .select("id, team_leader")
+        .select("id, team_leader, employee_group")
         .in("id", finalEmployeeIds);
 
       if (finalEmployeeError) {
@@ -781,19 +784,18 @@ export default function Home() {
       }
 
       const finalEmployeeMap = new Map(
-        (finalEmployeeData ?? []).map((item) => [
-          item.id,
-          item.team_leader,
-        ])
+        (finalEmployeeData ?? []).map((item) => [item.id, item])
       );
-
-      finalConflicts =
-        overlappingFinalConflicts.filter(
-          (request) =>
-            finalEmployeeMap.get(
-              request.employee_id
-            ) === employee.team_leader
-        );
+      finalConflicts = overlappingFinalConflicts.filter((request) => {
+        const other = finalEmployeeMap.get(request.employee_id);
+        if (!other) return false;
+        const currentGroup = employee.employee_group ?? "main";
+        const otherGroup = other.employee_group ?? "main";
+        if (currentGroup === "pa" || otherGroup === "pa") {
+          return currentGroup === "pa" && otherGroup === "pa";
+        }
+        return other.team_leader === employee.team_leader;
+      });
     }
 
     const hasConflict =
